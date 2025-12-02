@@ -46,16 +46,10 @@ app = FastAPI(
 # Add tenant context middleware
 app.add_middleware(TenantContextMiddleware)
 
-# Add CORS middleware
-from fastapi.middleware.cors import CORSMiddleware
+# Register security middleware (CORS + request signing)
+from .security import register_security
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Configure this for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+register_security(app)
 
 # Include routers
 app.include_router(async_router)
@@ -71,7 +65,13 @@ app.include_router(graphql_app, prefix="/graphql")
 
 # Analytics API
 from .analytics import router as analytics_router
+
 app.include_router(analytics_router)
+
+# Performance Monitoring API
+from .performance_monitoring import router as performance_router
+
+app.include_router(performance_router)
 
 # Static Files (Dashboard)
 from fastapi.staticfiles import StaticFiles
@@ -80,7 +80,9 @@ import os
 # Ensure static directory exists
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
-    app.mount("/dashboard", StaticFiles(directory=static_dir, html=True), name="dashboard")
+    app.mount(
+        "/dashboard", StaticFiles(directory=static_dir, html=True), name="dashboard"
+    )
 
 
 @app.get("/v1/health", response_model=HealthCheckResponse, tags=["Monitoring"])
@@ -115,7 +117,7 @@ async def analyze_prompt(
     # Check cache first
     from .cache_service import get_cached_result, cache_result
     from .middleware import get_current_tenant
-    
+
     tenant_id = get_current_tenant()
     if tenant_id:
         cached_result = get_cached_result(body.prompt, str(tenant_id))
@@ -181,4 +183,3 @@ async def analyze_prompt(
     )
 
     return analysis_result
-

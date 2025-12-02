@@ -10,6 +10,10 @@ Supports multiple redaction strategies:
 
 import re
 import hashlib
+import hmac
+import os
+
+from app.secrets import secrets
 from typing import List, Dict, Optional, Tuple
 from enum import Enum
 from app.compliance.models import ComplianceAction
@@ -228,7 +232,21 @@ class RedactionService:
             return original[0] + "*" * (len(original) - 2) + original[-1]
 
         elif strategy == RedactionStrategy.HASH_REPLACEMENT:
-            hash_val = hashlib.md5(original.encode()).hexdigest()[:8]
+            # Use HMAC-SHA256 with a server secret when available to
+            # prevent preimage attacks against deterministic labels.
+            # Fallback to SHA-256 when no secret configured.
+            key = secrets.get("PII_REDACTION_KEY") or os.getenv("PII_REDACTION_KEY")
+            if key:
+                if isinstance(key, str):
+                    key_bytes = key.encode("utf-8")
+                else:
+                    key_bytes = key
+                mac = hmac.new(
+                    key_bytes, original.encode("utf-8"), hashlib.sha256
+                ).hexdigest()[:8]
+                hash_val = mac
+            else:
+                hash_val = hashlib.sha256(original.encode()).hexdigest()[:8]
             return f"[{entity_type}:{hash_val}]"
 
         return "****"

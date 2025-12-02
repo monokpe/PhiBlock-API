@@ -573,32 +573,76 @@ def sync_usage_to_stripe():
     Aggregates usage from TokenUsage table and reports to Stripe.
     """
     from app.database import SessionLocal
-    from app.models import Tenant
+    from app.models import Tenant, TokenUsage
     from app.billing import billing_service
-    from sqlalchemy import text
+    from sqlalchemy import func
     import time
 
     logger.info("[sync_usage_to_stripe] Starting usage sync")
     
     db = SessionLocal()
     try:
-        # Get all tenants with stripe_subscription_id
-        tenants = db.query(Tenant).filter(Tenant.stripe_subscription_id.isnot(None)).all()
+        # 1. Get all tenants with active Stripe subscriptions
+        tenants = db.query(Tenant).filter(
+            Tenant.stripe_subscription_id.isnot(None)
+        ).all()
         
         for tenant in tenants:
-            # Aggregate usage since last sync (simplified logic for MVP)
-            # In a real app, we'd track 'reported_at' or similar
-            
-            # For MVP, we'll just report a dummy increment or assume we track delta
-            # Here we just log what we WOULD do
-            logger.info(f"Syncing usage for tenant {tenant.slug} ({tenant.stripe_customer_id})")
-            
-            # Example: Get total tokens for today
-            # query = ...
-            # quantity = ...
-            
-            # billing_service.report_usage(tenant.stripe_subscription_id, quantity)
-            
+            try:
+                # 2. Aggregate unreported usage for this tenant
+                # We sum up total_tokens for all records where reported_to_stripe is False
+                usage_stats = db.query(
+                    func.sum(TokenUsage.total_tokens).label("total_tokens"),
+                    func.count(TokenUsage.id).label("request_count")
+                ).filter(
+                    TokenUsage.tenant_id == tenant.id,
+                    TokenUsage.reported_to_stripe == False
+                ).first()
+                
+                total_tokens = usage_stats.total_tokens or 0
+                request_count = usage_stats.request_count or 0
+                
+                if total_tokens > 0:
+                    logger.info(f"Reporting {total_tokens} tokens for tenant {tenant.slug}")
+                    
+                    # 3. Report to Stripe
+                    # We need the subscription item ID. For this MVP, we'll assume 
+                    # the subscription has one item and we can get it from Stripe API
+                    # OR we store subscription_item_id in DB. 
+                    # For now, let's fetch the subscription to get the item ID.
+                    
+                    # Optimization: Store subscription_item_id in Tenant model in future.
+                    import stripe
+                    if billing_service.api_key:
+                        subscription = stripe.Subscription.retrieve(tenant.stripe_subscription_id)
+                        if subscription and subscription['items']['data']:
+                            subscription_item_id = subscription['items']['data'][0].id
+                            
+                            success = billing_service.report_usage(
+                                subscription_item_id, 
+                                int(total_tokens)
+                            )
+                            
+                            if success:
+                                # 4. Mark records as reported
+                                db.query(TokenUsage).filter(
+                                    TokenUsage.tenant_id == tenant.id,
+                                    TokenUsage.reported_to_stripe == False
+                                ).update({TokenUsage.reported_to_stripe: True})
+                                
+                                db.commit()
+                                logger.info(f"Successfully synced {total_tokens} tokens for {tenant.slug}")
+                            else:
+                                logger.error(f"Failed to report usage for {tenant.slug}")
+                        else:
+                            logger.error(f"No subscription items found for {tenant.slug}")
+                    else:
+                        logger.warning("Stripe API key not set, skipping report")
+                        
+            except Exception as e:
+                logger.error(f"Error processing tenant {tenant.slug}: {e}")
+                db.rollback()
+                
     except Exception as e:
         logger.error(f"[sync_usage_to_stripe] Error: {e}")
     finally:

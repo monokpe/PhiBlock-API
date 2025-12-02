@@ -75,6 +75,8 @@ class Tenant(Base):
         String(255), unique=True, nullable=False, index=True
     )  # URL-safe identifier
     plan = Column(String(50), default="basic")  # basic, pro, enterprise
+    stripe_customer_id = Column(String(255), nullable=True)
+    stripe_subscription_id = Column(String(255), nullable=True)
 
     # Metadata
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -201,6 +203,10 @@ class AuditLog(Base):
 
     tenant = relationship("Tenant", back_populates="audit_logs")
     api_key = relationship("APIKey", back_populates="audit_logs")
+
+    __table_args__ = (
+        Index("ix_audit_logs_tenant_timestamp", "tenant_id", "timestamp"),
+    )
     
     # Tenant filtering methods
     @classmethod
@@ -251,9 +257,17 @@ class TokenUsage(Base):
 
     # Audit
     audit_data = Column(JSON)
+    
+    # Billing sync status
+    reported_to_stripe = Column(Boolean, default=False, index=True)
 
     tenant = relationship("Tenant", back_populates="token_usage")
     api_key = relationship("APIKey")
+
+    __table_args__ = (
+        Index("ix_token_usage_tenant_timestamp", "tenant_id", "timestamp"),
+        Index("ix_token_usage_tenant_reported", "tenant_id", "reported_to_stripe"),
+    )
     
     # Tenant filtering methods
     @classmethod
