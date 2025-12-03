@@ -10,14 +10,14 @@ This file intentionally keeps the implementation small to avoid scope creep.
 
 from __future__ import annotations
 
-import os
-import hmac
 import hashlib
+import hmac
 import json
+import logging
+import os
 from datetime import datetime, timezone
 from typing import Dict, Optional
 from urllib.parse import urlparse
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -98,9 +98,7 @@ def is_rate_limited(url: str) -> bool:
             # expire in 70 seconds to cover a minute window
             r.expire(key, 70)
         if count > limit:
-            logger.warning(
-                f"Rate limit exceeded for webhook host {host}: {count}/{limit}"
-            )
+            logger.warning(f"Rate limit exceeded for webhook host {host}: {count}/{limit}")
             return True
         return False
     except Exception:

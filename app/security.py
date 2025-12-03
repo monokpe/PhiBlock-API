@@ -11,8 +11,8 @@ The signing middleware checks `X-Guardrails-Signature` and
 
 from __future__ import annotations
 
-import hmac
 import hashlib
+import hmac
 import json
 import os
 from datetime import datetime, timezone
@@ -20,9 +20,9 @@ from typing import Callable
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from . import webhook_security
 
@@ -36,9 +36,7 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app, window_seconds: int = 300):
         super().__init__(app)
-        self.window_seconds = int(
-            os.getenv("WEBHOOK_SIGNATURE_WINDOW", str(window_seconds))
-        )
+        self.window_seconds = int(os.getenv("WEBHOOK_SIGNATURE_WINDOW", str(window_seconds)))
 
     async def dispatch(self, request: Request, call_next: Callable):
         # Only validate webhook endpoints
@@ -55,9 +53,7 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
         ts_header = request.headers.get("x-guardrails-timestamp")
 
         if not sig_header or not ts_header:
-            return JSONResponse(
-                {"detail": "Missing signature headers"}, status_code=401
-            )
+            return JSONResponse({"detail": "Missing signature headers"}, status_code=401)
 
         try:
             # Validate timestamp (prevent replay)
@@ -76,15 +72,13 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
             # Attempt to canonicalize if JSON
             try:
                 parsed = json.loads(body_bytes.decode("utf-8"))
-                canonical = json.dumps(
-                    parsed, separators=(",", ":"), sort_keys=True
-                ).encode("utf-8")
+                canonical = json.dumps(parsed, separators=(",", ":"), sort_keys=True).encode(
+                    "utf-8"
+                )
             except Exception:
                 canonical = body_bytes
 
-            computed = hmac.new(
-                secret.encode("utf-8"), canonical, hashlib.sha256
-            ).hexdigest()
+            computed = hmac.new(secret.encode("utf-8"), canonical, hashlib.sha256).hexdigest()
             # Signature header may include algorithm prefix like 'sha256='
             header_sig = sig_header.split("=")[-1]
             if not hmac.compare_digest(computed, header_sig):
@@ -97,9 +91,7 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
             response = await call_next(Request(request.scope, receive))
             return response
         except Exception:
-            return JSONResponse(
-                {"detail": "Signature verification failed"}, status_code=401
-            )
+            return JSONResponse({"detail": "Signature verification failed"}, status_code=401)
 
 
 def register_security(app: FastAPI) -> None:

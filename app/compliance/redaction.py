@@ -8,15 +8,15 @@ Supports multiple redaction strategies:
 - Hash replacement: Replace with hash for consistency
 """
 
-import re
 import hashlib
 import hmac
 import os
-
-from app.secrets import secrets
-from typing import List, Dict, Optional, Tuple
+import re
 from enum import Enum
+from typing import Dict, List, Optional, Tuple
+
 from app.compliance.models import ComplianceAction
+from app.secrets import secrets
 
 
 class RedactionStrategy(Enum):
@@ -41,9 +41,7 @@ class RedactionService:
     - Redaction mapping for audit trails
     """
 
-    def __init__(
-        self, strategy: RedactionStrategy = RedactionStrategy.TOKEN_REPLACEMENT
-    ):
+    def __init__(self, strategy: RedactionStrategy = RedactionStrategy.TOKEN_REPLACEMENT):
         """
         Initialize the redaction service.
 
@@ -150,13 +148,9 @@ class RedactionService:
                     start = match.start()
                     end = match.end()
 
-                    redacted = self._generate_redacted_value(
-                        original, pattern_name, strategy
-                    )
+                    redacted = self._generate_redacted_value(original, pattern_name, strategy)
 
-                    redacted_text = (
-                        redacted_text[:start] + redacted + redacted_text[end:]
-                    )
+                    redacted_text = redacted_text[:start] + redacted + redacted_text[end:]
 
                     redaction_records.append(
                         {
@@ -241,9 +235,7 @@ class RedactionService:
                     key_bytes = key.encode("utf-8")
                 else:
                     key_bytes = key
-                mac = hmac.new(
-                    key_bytes, original.encode("utf-8"), hashlib.sha256
-                ).hexdigest()[:8]
+                mac = hmac.new(key_bytes, original.encode("utf-8"), hashlib.sha256).hexdigest()[:8]
                 hash_val = mac
             else:
                 hash_val = hashlib.sha256(original.encode()).hexdigest()[:8]

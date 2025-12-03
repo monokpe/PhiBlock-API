@@ -6,14 +6,15 @@ Supports multiple compliance frameworks (HIPAA, GDPR, PCI-DSS).
 """
 
 import re
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 from app.compliance.models import (
+    ComplianceAction,
+    ComplianceFramework,
+    ComplianceResult,
     ComplianceRule,
     ComplianceViolation,
-    ComplianceResult,
-    ComplianceFramework,
     Severity,
-    ComplianceAction,
 )
 
 

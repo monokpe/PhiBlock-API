@@ -11,15 +11,16 @@ Tests cover:
 - Delivery logging
 """
 
-import pytest
-from unittest.mock import MagicMock, patch, Mock
-import httpx
 from datetime import datetime, timezone
+from unittest.mock import MagicMock, Mock, patch
+
+import httpx
+import pytest
 
 from app.webhooks import (
+    WebhookEventType,
     WebhookNotifier,
     WebhookPayload,
-    WebhookEventType,
     WebhookStatus,
     get_webhook_notifier,
 )
@@ -72,18 +73,14 @@ class TestWebhookURLValidation:
     def test_url_with_query_params(self):
         """URL with query parameters should pass."""
         notifier = WebhookNotifier()
-        is_valid, error = notifier.validate_webhook_url(
-            "https://example.com/webhook?key=value"
-        )
+        is_valid, error = notifier.validate_webhook_url("https://example.com/webhook?key=value")
         assert is_valid is True
         assert error is None
 
     def test_url_with_port(self):
         """URL with custom port should pass."""
         notifier = WebhookNotifier()
-        is_valid, error = notifier.validate_webhook_url(
-            "https://example.com:8080/webhook"
-        )
+        is_valid, error = notifier.validate_webhook_url("https://example.com:8080/webhook")
         assert is_valid is True
         assert error is None
 
@@ -258,9 +255,7 @@ class TestWebhookDelivery:
             status="SUCCESS",
         )
 
-        success, error, attempt = notifier.send_webhook(
-            "https://example.com/webhook", payload
-        )
+        success, error, attempt = notifier.send_webhook("https://example.com/webhook", payload)
 
         assert success is True
         assert error is None
@@ -281,9 +276,7 @@ class TestWebhookDelivery:
             status="SUCCESS",
         )
 
-        success, error, attempt = notifier.send_webhook(
-            "https://example.com/webhook", payload
-        )
+        success, error, attempt = notifier.send_webhook("https://example.com/webhook", payload)
 
         assert success is True
 
@@ -302,9 +295,7 @@ class TestWebhookDelivery:
             status="SUCCESS",
         )
 
-        success, error, attempt = notifier.send_webhook(
-            "https://example.com/webhook", payload
-        )
+        success, error, attempt = notifier.send_webhook("https://example.com/webhook", payload)
 
         assert success is True
 
@@ -321,9 +312,7 @@ class TestWebhookDelivery:
             status="SUCCESS",
         )
 
-        success, error, attempt = notifier.send_webhook(
-            "https://example.com/webhook", payload
-        )
+        success, error, attempt = notifier.send_webhook("https://example.com/webhook", payload)
 
         assert success is False
         assert "Timeout" in error
@@ -342,9 +331,7 @@ class TestWebhookDelivery:
             status="SUCCESS",
         )
 
-        success, error, attempt = notifier.send_webhook(
-            "https://example.com/webhook", payload
-        )
+        success, error, attempt = notifier.send_webhook("https://example.com/webhook", payload)
 
         assert success is False
         assert "Request failed" in error
@@ -395,9 +382,7 @@ class TestWebhookDelivery:
             status="SUCCESS",
         )
 
-        success, error, attempt = notifier.send_webhook(
-            "https://example.com/webhook", payload
-        )
+        success, error, attempt = notifier.send_webhook("https://example.com/webhook", payload)
 
         assert success is True
         assert attempt == 3
@@ -418,9 +403,7 @@ class TestWebhookDelivery:
             status="SUCCESS",
         )
 
-        success, error, attempt = notifier.send_webhook(
-            "https://example.com/webhook", payload
-        )
+        success, error, attempt = notifier.send_webhook("https://example.com/webhook", payload)
 
         assert success is False
         assert attempt == 1  # Only one attempt

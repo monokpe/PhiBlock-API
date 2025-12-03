@@ -23,14 +23,14 @@ Usage:
 """
 
 from workers.celery_app import (
-    app,
-    detect_pii_async,
-    check_compliance_async,
-    redact_async,
-    score_risk_async,
     analyze_complete_async,
+    app,
+    check_compliance_async,
+    detect_pii_async,
     get_task_result,
     get_task_status,
+    redact_async,
+    score_risk_async,
 )
 
 __all__ = [

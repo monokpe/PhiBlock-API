@@ -4,6 +4,7 @@ import json
 import os
 import sys
 from unittest.mock import patch
+
 import pytest
 
 # Reload the audit_encryption module to ensure cryptography import is fresh
@@ -13,8 +14,8 @@ if "app.audit_encryption" in sys.modules:
 from app.audit_encryption import (
     AuditEncryptor,
     AuditLogFilter,
-    encrypt_audit_log,
     decrypt_audit_log,
+    encrypt_audit_log,
     get_audit_encryptor,
 )
 
@@ -94,16 +95,12 @@ class TestAuditLogFilter:
             "email": "test@example.com",
         }
 
-        filtered = AuditLogFilter.filter_audit_log(
-            log, frameworks=["HIPAA"], action="mask"
-        )
+        filtered = AuditLogFilter.filter_audit_log(log, frameworks=["HIPAA"], action="mask")
 
         assert filtered["user_id"] == 123
         assert filtered["action"] == "analyze"
         assert filtered["ssn"] != "123-45-6789"  # Should be masked
-        assert (
-            filtered["ssn"] == "12*******89"
-        )  # "123-45-6789" is 11 chars: 2 + (11-4=7) + 2
+        assert filtered["ssn"] == "12*******89"  # "123-45-6789" is 11 chars: 2 + (11-4=7) + 2
 
     def test_filter_audit_log_remove_action(self):
         """filter_audit_log with remove should replace sensitive fields."""
@@ -113,9 +110,7 @@ class TestAuditLogFilter:
             "action": "login",
         }
 
-        filtered = AuditLogFilter.filter_audit_log(
-            log, frameworks=["HIPAA"], action="remove"
-        )
+        filtered = AuditLogFilter.filter_audit_log(log, frameworks=["HIPAA"], action="remove")
 
         assert filtered["user_id"] == 123
         assert filtered["action"] == "login"
@@ -130,9 +125,7 @@ class TestAuditLogFilter:
             "location": "US",
         }
 
-        filtered = AuditLogFilter.filter_audit_log(
-            log, frameworks=["HIPAA", "GDPR"], action="mask"
-        )
+        filtered = AuditLogFilter.filter_audit_log(log, frameworks=["HIPAA", "GDPR"], action="mask")
 
         # ssn is HIPAA and GDPR
         assert filtered["ssn"] != "123-45-6789"

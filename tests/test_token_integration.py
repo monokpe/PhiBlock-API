@@ -9,10 +9,11 @@ Tests cover:
 - Token metadata tracking
 """
 
+import json
+from unittest.mock import MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, patch
-import json
 
 from app.main import app
 from app.token_tracking import TokenTracker, get_token_tracker

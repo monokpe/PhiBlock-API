@@ -10,17 +10,18 @@ Tests for:
 """
 
 import pytest
-from app.compliance.risk_scoring import (
-    RiskScorer,
-    RiskLevel,
-    RiskScore,
-    OverallRiskAssessment,
-    get_risk_scorer,
-)
+
 from app.compliance.models import (
+    ComplianceAction,
     ComplianceViolation,
     Severity,
-    ComplianceAction,
+)
+from app.compliance.risk_scoring import (
+    OverallRiskAssessment,
+    RiskLevel,
+    RiskScore,
+    RiskScorer,
+    get_risk_scorer,
 )
 
 
@@ -364,10 +365,7 @@ class TestRecommendations:
         assessment = scorer.assess_overall_risk(injection_score=0.95)
 
         recommendations_text = " ".join(assessment.recommendations)
-        assert (
-            "prompt" in recommendations_text.lower()
-            or "sanitiz" in recommendations_text.lower()
-        )
+        assert "prompt" in recommendations_text.lower() or "sanitiz" in recommendations_text.lower()
 
     def test_compliance_recommendation(self):
         """Test recommendation for compliance violations"""

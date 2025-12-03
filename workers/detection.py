@@ -1,11 +1,14 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from .main import app
 
 # Load the tokenizer and model
 tokenizer = AutoTokenizer.from_pretrained("protectai/deberta-v3-base-prompt-injection-v2")
-model = AutoModelForSequenceClassification.from_pretrained("protectai/deberta-v3-base-prompt-injection-v2")
+model = AutoModelForSequenceClassification.from_pretrained(
+    "protectai/deberta-v3-base-prompt-injection-v2"
+)
+
 
 def get_injection_score(prompt: str) -> float:
     """
@@ -20,10 +23,11 @@ def get_injection_score(prompt: str) -> float:
     inputs = tokenizer(prompt, return_tensors="pt")
     with torch.no_grad():
         logits = model(**inputs).logits
-    
+
     # For now, we'll just return a dummy value.
     # We will replace this with the actual score calculation later.
     return logits.softmax(dim=-1)[0][1].item()
+
 
 @app.task
 def detect_prompt_injection(prompt: str) -> float:

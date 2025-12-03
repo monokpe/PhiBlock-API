@@ -5,10 +5,10 @@ from fastapi import Depends, FastAPI, Request
 from pydantic import BaseModel, Field
 
 from . import auth, logging, models
-from .database import get_db
-from .rate_limiting import RateLimiter
 from .async_endpoints import router as async_router
+from .database import get_db
 from .middleware import TenantContextMiddleware
+from .rate_limiting import RateLimiter
 from .tenant_api import router as tenant_router
 
 
@@ -25,9 +25,10 @@ class HealthCheckResponse(BaseModel):
 
 rate_limiter = RateLimiter(requests_per_minute=100)
 
+import os
+
 # Initialize Sentry
 import sentry_sdk
-import os
 
 SENTRY_DSN = os.getenv("SENTRY_DSN")
 if SENTRY_DSN:
@@ -57,8 +58,9 @@ app.include_router(tenant_router)
 
 # GraphQL API
 from strawberry.fastapi import GraphQLRouter
-from .graphql.schema import schema
+
 from .graphql.context import get_context
+from .graphql.schema import schema
 
 graphql_app = GraphQLRouter(schema, context_getter=get_context)
 app.include_router(graphql_app, prefix="/graphql")
@@ -73,16 +75,15 @@ from .performance_monitoring import router as performance_router
 
 app.include_router(performance_router)
 
+import os
+
 # Static Files (Dashboard)
 from fastapi.staticfiles import StaticFiles
-import os
 
 # Ensure static directory exists
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
-    app.mount(
-        "/dashboard", StaticFiles(directory=static_dir, html=True), name="dashboard"
-    )
+    app.mount("/dashboard", StaticFiles(directory=static_dir, html=True), name="dashboard")
 
 
 @app.get("/v1/health", response_model=HealthCheckResponse, tags=["Monitoring"])
@@ -115,7 +116,7 @@ async def analyze_prompt(
     request_id = uuid.uuid4()
 
     # Check cache first
-    from .cache_service import get_cached_result, cache_result
+    from .cache_service import cache_result, get_cached_result
     from .middleware import get_current_tenant
 
     tenant_id = get_current_tenant()
@@ -127,8 +128,9 @@ async def analyze_prompt(
             cached_result["cached"] = True
             return cached_result
 
-    from .detection import detect_pii
     from workers.detection import get_injection_score
+
+    from .detection import detect_pii
 
     # Detect PII
     entities = detect_pii(body.prompt)
@@ -149,9 +151,7 @@ async def analyze_prompt(
     for entity in sorted(entities, key=lambda e: e["position"]["start"], reverse=True):
         start = entity["position"]["start"]
         end = entity["position"]["end"]
-        sanitized_prompt = (
-            sanitized_prompt[:start] + f"[{entity['type']}]" + sanitized_prompt[end:]
-        )
+        sanitized_prompt = sanitized_prompt[:start] + f"[{entity['type']}]" + sanitized_prompt[end:]
 
     analysis_result = {
         "request_id": request_id,

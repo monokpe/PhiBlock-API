@@ -8,20 +8,21 @@ Provides metrics and diagnostics for system performance:
 - Performance benchmarks
 """
 
+import os
+from datetime import datetime
+
+import psutil
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from datetime import datetime
-import psutil
-import os
 
+from . import models
+from .auth import get_current_user
 from .database import get_db, get_engine_info
 from .query_optimization import (
+    IndexingStrategy,
     QueryOptimizer,
     get_slow_queries_report,
-    IndexingStrategy,
 )
-from .auth import get_current_user
-from . import models
 
 router = APIRouter(
     prefix="/v1/performance",
@@ -77,9 +78,7 @@ async def get_performance_metrics(
                 "num_threads": process.num_threads(),
             },
             "requests": {
-                "uptime_seconds": (
-                    datetime.utcnow() - datetime(2025, 1, 1)
-                ).total_seconds(),
+                "uptime_seconds": (datetime.utcnow() - datetime(2025, 1, 1)).total_seconds(),
             },
         }
     except Exception as e:

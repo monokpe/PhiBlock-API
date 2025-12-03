@@ -1,5 +1,5 @@
-
 import pytest
+
 from app.detection import detect_pii
 
 
@@ -37,7 +37,7 @@ def test_detect_pii_no_pii():
     text = "This is a test sentence with no PII."
     entities = detect_pii(text)
     # Filter out ORG entities which can be false positives
-    filtered_entities = [e for e in entities if e['type'] != 'ORG']
+    filtered_entities = [e for e in entities if e["type"] != "ORG"]
     assert len(filtered_entities) == 0
 
 
@@ -55,7 +55,9 @@ def test_detect_pii_false_positives():
     text = "My order number is 123456789012 and I live at 123 Main St."
     entities = detect_pii(text)
     # Filter out any potential false positives we are not concerned about for this test
-    filtered_entities = [e for e in entities if e['type'] not in ['DATE', 'CARDINAL', 'ORG', 'GPE', 'LOC', 'FAC']]
+    filtered_entities = [
+        e for e in entities if e["type"] not in ["DATE", "CARDINAL", "ORG", "GPE", "LOC", "FAC"]
+    ]
     assert len(filtered_entities) == 0
 
 

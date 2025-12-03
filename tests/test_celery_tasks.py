@@ -9,22 +9,23 @@ Tests cover:
 - Error handling
 """
 
+from typing import Any, Dict, List
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 from celery import Celery
 from celery.result import AsyncResult
-from typing import Dict, List, Any
 
 # Import the Celery app and tasks
 from workers.celery_app import (
-    app,
-    detect_pii_async,
-    check_compliance_async,
-    redact_async,
-    score_risk_async,
     analyze_complete_async,
+    app,
+    check_compliance_async,
+    detect_pii_async,
     get_task_result,
     get_task_status,
+    redact_async,
+    score_risk_async,
 )
 
 

@@ -7,14 +7,14 @@ Tests cover:
 - Webhook parameter combinations with other options
 """
 
+import json
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock, Mock
-import json
 
-from app.main import app
 from app.async_endpoints import AsyncAnalysisRequest
-import pytest
+from app.main import app
 
 
 # Auto-mock Celery task submission used by the async endpoints to avoid
@@ -124,9 +124,7 @@ class TestWebhookParameterAcceptance:
 
     def test_async_analysis_request_webhook_url_long(self):
         """Long webhook URLs should be accepted."""
-        url = "https://example.com/webhook?" + "&".join(
-            [f"param{i}=value{i}" for i in range(20)]
-        )
+        url = "https://example.com/webhook?" + "&".join([f"param{i}=value{i}" for i in range(20)])
         request = AsyncAnalysisRequest(
             text="Test text",
             webhook_url=url,

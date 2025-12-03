@@ -9,12 +9,12 @@ Provides helpers for efficient database queries:
 """
 
 import logging
-from typing import List, Type, Optional, Any, Dict
+import time
 from datetime import datetime, timedelta
 from functools import wraps
-import time
+from typing import Any, Dict, List, Optional, Type
 
-from sqlalchemy import and_, or_, desc
+from sqlalchemy import and_, desc, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy.sql import text
 
@@ -58,12 +58,7 @@ class QueryOptimizer:
         if end_date:
             query = query.filter(models.AuditLog.timestamp <= end_date)
 
-        return (
-            query.order_by(desc(models.AuditLog.timestamp))
-            .limit(limit)
-            .offset(offset)
-            .all()
-        )
+        return query.order_by(desc(models.AuditLog.timestamp)).limit(limit).offset(offset).all()
 
     @staticmethod
     def get_customers_with_keys(
@@ -118,14 +113,12 @@ class QueryOptimizer:
                 func.sum(models.TokenUsage.input_tokens).label("total_input"),
                 func.sum(models.TokenUsage.output_tokens).label("total_output"),
                 func.count(models.TokenUsage.id).label("request_count"),
-                func.avg(
-                    models.TokenUsage.input_tokens + models.TokenUsage.output_tokens
-                ).label("avg_tokens"),
+                func.avg(models.TokenUsage.input_tokens + models.TokenUsage.output_tokens).label(
+                    "avg_tokens"
+                ),
             )
             .filter(models.TokenUsage.tenant_id == tenant_id)
-            .filter(
-                models.TokenUsage.timestamp >= datetime.utcnow() - timedelta(days=days)
-            )
+            .filter(models.TokenUsage.timestamp >= datetime.utcnow() - timedelta(days=days))
         )
 
         if api_key_id:
@@ -142,9 +135,7 @@ class QueryOptimizer:
         }
 
     @staticmethod
-    def batch_insert(
-        db: Session, models_list: List[Any], batch_size: int = 1000
-    ) -> None:
+    def batch_insert(db: Session, models_list: List[Any], batch_size: int = 1000) -> None:
         """
         Insert multiple records efficiently using batch operations.
         """
@@ -166,12 +157,7 @@ class QueryOptimizer:
         """
         total_deleted = 0
         while True:
-            batch = (
-                db.query(model_class)
-                .filter_by(**filter_criteria)
-                .limit(batch_size)
-                .all()
-            )
+            batch = db.query(model_class).filter_by(**filter_criteria).limit(batch_size).all()
             if not batch:
                 break
             for record in batch:
@@ -268,9 +254,7 @@ class IndexingStrategy:
 
 
 # Example: Query performance monitoring endpoint helper
-def get_slow_queries_report(
-    db: Session, threshold_seconds: float = 1.0
-) -> Dict[str, Any]:
+def get_slow_queries_report(db: Session, threshold_seconds: float = 1.0) -> Dict[str, Any]:
     """
     Get a report of slow queries from pg_stat_statements (PostgreSQL).
     Requires pg_stat_statements extension enabled.

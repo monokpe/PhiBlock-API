@@ -1,10 +1,12 @@
-import stripe
+import logging
 import os
 import time
 from typing import Optional
-import logging
+
+import stripe
 
 logger = logging.getLogger(__name__)
+
 
 class BillingService:
     def __init__(self):
@@ -20,7 +22,7 @@ class BillingService:
         """
         if not self.api_key:
             return None
-        
+
         try:
             customer = stripe.Customer.create(
                 email=email,
@@ -58,17 +60,18 @@ class BillingService:
         try:
             # Idempotency key to prevent duplicate reports
             idempotency_key = f"usage_{subscription_item_id}_{timestamp}" if timestamp else None
-            
+
             stripe.SubscriptionItem.create_usage_record(
                 subscription_item_id,
                 quantity=quantity,
                 timestamp=timestamp or int(time.time()),
-                action='increment',
-                idempotency_key=idempotency_key
+                action="increment",
+                idempotency_key=idempotency_key,
             )
             return True
         except Exception as e:
             logger.error(f"Failed to report usage to Stripe: {e}")
             return False
+
 
 billing_service = BillingService()

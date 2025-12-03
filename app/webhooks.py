@@ -13,13 +13,15 @@ Features:
 - Event type support
 """
 
-import logging
 import json
+import logging
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, Tuple
 from enum import Enum
+from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlparse
+
 import httpx
+
 from . import webhook_security
 
 logger = logging.getLogger(__name__)
@@ -243,9 +245,7 @@ class WebhookNotifier:
         # Attempt delivery with retries
         for attempt in range(1, self.max_retries + 1):
             try:
-                response = self._post_webhook(
-                    webhook_url, payload, extra_headers=extra_headers
-                )
+                response = self._post_webhook(webhook_url, payload, extra_headers=extra_headers)
 
                 if response.status_code in (200, 201, 202, 204):
                     logger.info(
@@ -273,9 +273,7 @@ class WebhookNotifier:
             except httpx.TimeoutException as e:
                 error_msg = f"Timeout after {self.timeout}s"
                 if attempt < self.max_retries:
-                    logger.warning(
-                        f"{error_msg}, retrying (attempt {attempt}/{self.max_retries})"
-                    )
+                    logger.warning(f"{error_msg}, retrying (attempt {attempt}/{self.max_retries})")
                     self._wait_with_backoff(attempt)
                     continue
                 logger.error(f"Webhook failed: {error_msg}")
@@ -285,9 +283,7 @@ class WebhookNotifier:
             except httpx.RequestError as e:
                 error_msg = f"Request failed: {str(e)[:100]}"
                 if attempt < self.max_retries:
-                    logger.warning(
-                        f"{error_msg}, retrying (attempt {attempt}/{self.max_retries})"
-                    )
+                    logger.warning(f"{error_msg}, retrying (attempt {attempt}/{self.max_retries})")
                     self._wait_with_backoff(attempt)
                     continue
                 logger.error(f"Webhook failed: {error_msg}")

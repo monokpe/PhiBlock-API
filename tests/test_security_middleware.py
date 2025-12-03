@@ -1,10 +1,11 @@
-import os
 import json
+import os
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.webhook_security import sign_payload
 from app.security import register_security
+from app.webhook_security import sign_payload
 
 
 def make_app():

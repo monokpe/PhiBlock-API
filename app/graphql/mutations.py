@@ -2,17 +2,24 @@
 GraphQL mutation resolvers.
 """
 
-import strawberry
-from typing import Optional
-import uuid
 import time
+import uuid
+from typing import Optional
+
+import strawberry
 from sqlalchemy.orm import Session
-from .types import TenantType, AnalysisResultType, DetectionResultType, EntityType, EntityPositionType
-from .. import models
-from .. import cache_service
-from ..detection import detect_pii
+
 from workers.detection import get_injection_score
-from .. import logging
+
+from .. import cache_service, logging, models
+from ..detection import detect_pii
+from .types import (
+    AnalysisResultType,
+    DetectionResultType,
+    EntityPositionType,
+    EntityType,
+    TenantType,
+)
 
 
 @strawberry.input
@@ -34,20 +41,16 @@ class Mutation:
     def create_tenant(self, info, input: TenantInput) -> TenantType:
         """Create a new tenant."""
         db: Session = info.context["db"]
-        
+
         # Generate slug if not provided
         slug = input.slug or input.name.lower().replace(" ", "-")
-        
+
         # Check for duplicate slug
         existing = db.query(models.Tenant).filter(models.Tenant.slug == slug).first()
         if existing:
             raise Exception(f"Tenant with slug '{slug}' already exists.")
-            
-        tenant = models.Tenant(
-            name=input.name,
-            slug=slug,
-            plan=input.plan
-        )
+
+        tenant = models.Tenant(name=input.name, slug=slug, plan=input.plan)
         db.add(tenant)
         db.commit()
         db.refresh(tenant)
@@ -60,15 +63,15 @@ class Mutation:
         """Update an existing tenant."""
         db: Session = info.context["db"]
         tenant = db.query(models.Tenant).filter(models.Tenant.id == tenant_id).first()
-        
+
         if not tenant:
             return None
-            
+
         if input.name:
             tenant.name = input.name
         if input.plan:
             tenant.plan = input.plan
-            
+
         db.commit()
         db.refresh(tenant)
         return tenant
@@ -78,10 +81,10 @@ class Mutation:
         """Delete a tenant."""
         db: Session = info.context["db"]
         tenant = db.query(models.Tenant).filter(models.Tenant.id == tenant_id).first()
-        
+
         if not tenant:
             return False
-            
+
         db.delete(tenant)
         db.commit()
         return True
@@ -92,7 +95,7 @@ class Mutation:
         db: Session = info.context["db"]
         current_user = info.context.get("current_user")
         tenant_id = info.context.get("tenant_id")
-        
+
         if not current_user:
             raise Exception("Authentication required")
 
@@ -109,14 +112,14 @@ class Mutation:
                     pii_found=detections_data["pii_found"],
                     entities=detections_data["entities"],
                     injection_detected=detections_data["injection_detected"],
-                    injection_score=detections_data["injection_score"]
+                    injection_score=detections_data["injection_score"],
                 )
                 return AnalysisResultType(
                     request_id=request_id,
                     status="completed",
                     sanitized_prompt=cached_result["sanitized_prompt"],
                     detections=detections,
-                    cached=True
+                    cached=True,
                 )
 
         # Perform analysis
@@ -145,15 +148,15 @@ class Mutation:
             pii_found=pii_found,
             entities=entities,
             injection_detected=injection_detected,
-            injection_score=round(injection_score, 4)
+            injection_score=round(injection_score, 4),
         )
-        
+
         result = AnalysisResultType(
             request_id=request_id,
             status="completed",
             sanitized_prompt=sanitized_prompt,
             detections=detections,
-            cached=False
+            cached=False,
         )
 
         # Cache result (need to convert to dict for caching)
@@ -177,7 +180,7 @@ class Mutation:
         # We need to convert GraphQL types back to dicts/primitives for logging if needed
         # But log_request takes primitives mostly.
         # analysis_result arg in log_request expects a dict.
-        
+
         analysis_result_dict = {
             "request_id": request_id,
             "status": "completed",

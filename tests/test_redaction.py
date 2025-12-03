@@ -10,14 +10,15 @@ Tests for:
 """
 
 import pytest
+
+from app.compliance.models import ComplianceAction
 from app.compliance.redaction import (
+    RedactionPipeline,
     RedactionService,
     RedactionStrategy,
-    RedactionPipeline,
     get_redaction_service,
     reset_redaction_service,
 )
-from app.compliance.models import ComplianceAction
 
 
 class TestRedactionStrategies:
@@ -40,9 +41,7 @@ class TestRedactionStrategies:
         service = RedactionService(RedactionStrategy.TOKEN_REPLACEMENT)
 
         text = "Email: john@example.com"
-        entities = [
-            {"type": "EMAIL", "value": "john@example.com", "start": 7, "end": 23}
-        ]
+        entities = [{"type": "EMAIL", "value": "john@example.com", "start": 7, "end": 23}]
 
         redacted, records = service.redact_text(text, entities)
 
@@ -257,9 +256,7 @@ class TestRedactionActions:
         service = RedactionService()
 
         text = "Sensitive data here"
-        entities = [
-            {"type": "SENSITIVE", "value": "Sensitive data", "start": 0, "end": 14}
-        ]
+        entities = [{"type": "SENSITIVE", "value": "Sensitive data", "start": 0, "end": 14}]
 
         result, records = service.redact_action(text, entities, ComplianceAction.BLOCK)
 
@@ -422,9 +419,7 @@ class TestRedactionEdgeCases:
         service = RedactionService()
 
         text = "Email: user+tag@sub.domain.com"
-        entities = [
-            {"type": "EMAIL", "value": "user+tag@sub.domain.com", "start": 7, "end": 30}
-        ]
+        entities = [{"type": "EMAIL", "value": "user+tag@sub.domain.com", "start": 7, "end": 30}]
 
         redacted, records = service.redact_text(text, entities)
 

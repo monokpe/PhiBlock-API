@@ -1,15 +1,14 @@
+import logging
 import os
+from typing import Generator
+
 from sqlalchemy import create_engine, event, pool
 from sqlalchemy.orm import sessionmaker
-from typing import Generator
-import logging
 
 logger = logging.getLogger(__name__)
 
 # Database URL from environment or default
-SQLALCHEMY_DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql://user:password@db/guardrails_db"
-)
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@db/guardrails_db")
 
 # Connection pooling configuration for production performance
 # Uses QueuePool for high-concurrency scenarios
@@ -36,9 +35,7 @@ def set_sqlite_pragma(dbapi_conn, connection_record):
         cursor = dbapi_conn.cursor()
         # Enable query optimization
         cursor.execute("SET statement_timeout = 30000")  # 30 second query timeout
-        cursor.execute(
-            "SET work_mem = '256MB'"
-        )  # Increase working memory for complex queries
+        cursor.execute("SET work_mem = '256MB'")  # Increase working memory for complex queries
         cursor.close()
 
 
@@ -84,13 +81,7 @@ def get_engine_info() -> dict:
     pool_obj = engine.pool
     return {
         "pool_size": pool_obj.size() if hasattr(pool_obj, "size") else "N/A",
-        "checked_out": (
-            pool_obj.checkedout() if hasattr(pool_obj, "checkedout") else "N/A"
-        ),
+        "checked_out": (pool_obj.checkedout() if hasattr(pool_obj, "checkedout") else "N/A"),
         "overflow": pool_obj.overflow() if hasattr(pool_obj, "overflow") else "N/A",
-        "total": (
-            pool_obj.size() + pool_obj.overflow()
-            if hasattr(pool_obj, "size")
-            else "N/A"
-        ),
+        "total": (pool_obj.size() + pool_obj.overflow() if hasattr(pool_obj, "size") else "N/A"),
     }

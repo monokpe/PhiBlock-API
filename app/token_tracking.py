@@ -14,12 +14,12 @@ Features:
 
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
-from enum import Enum
 from decimal import Decimal
+from enum import Enum
+from typing import Dict, List, Optional, Tuple
 
 import tiktoken
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -77,9 +77,7 @@ class TokenTracker:
         """Load available tokenizers."""
         try:
             # Load the default encoding (cl100k_base covers all modern models)
-            self.tokenizers[TokenModel.DEFAULT] = tiktoken.get_encoding(
-                TokenModel.DEFAULT
-            )
+            self.tokenizers[TokenModel.DEFAULT] = tiktoken.get_encoding(TokenModel.DEFAULT)
             logger.info("TokenTracker: Loaded tokenizer for cl100k_base")
         except Exception as e:
             logger.error(f"TokenTracker: Failed to load tokenizers: {e}")
@@ -111,9 +109,7 @@ class TokenTracker:
             # Fallback: estimate 1 token per 4 characters
             return len(text) // 4
 
-    def count_tokens_batch(
-        self, texts: List[str], model: TokenModel = None
-    ) -> List[int]:
+    def count_tokens_batch(self, texts: List[str], model: TokenModel = None) -> List[int]:
         """
         Count tokens for multiple texts efficiently.
 
@@ -178,15 +174,9 @@ class TokenTracker:
         rates = pricing.get(model, pricing["default"])
 
         # Calculate cost
-        input_cost = (
-            Decimal(str(input_tokens))
-            * Decimal(str(rates["input"]))
-            / Decimal("1000000")
-        )
+        input_cost = Decimal(str(input_tokens)) * Decimal(str(rates["input"])) / Decimal("1000000")
         output_cost = (
-            Decimal(str(output_tokens))
-            * Decimal(str(rates["output"]))
-            / Decimal("1000000")
+            Decimal(str(output_tokens)) * Decimal(str(rates["output"])) / Decimal("1000000")
         )
 
         return input_cost + output_cost
@@ -248,18 +238,14 @@ class TokenUsageLogger:
         try:
             # Count tokens
             input_tokens = self.token_tracker.count_tokens(input_text)
-            output_tokens = (
-                self.token_tracker.count_tokens(output_text) if output_text else 0
-            )
+            output_tokens = self.token_tracker.count_tokens(output_text) if output_text else 0
             total_tokens = input_tokens + output_tokens
 
             # Determine risk level
             risk_level, warning = self.token_tracker.get_risk_level(total_tokens)
 
             # Estimate cost
-            estimated_cost = self.token_tracker.estimate_cost(
-                input_tokens, output_tokens, model
-            )
+            estimated_cost = self.token_tracker.estimate_cost(input_tokens, output_tokens, model)
 
             # Return usage stats
             usage_stats = {

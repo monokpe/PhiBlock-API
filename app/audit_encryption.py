@@ -12,16 +12,16 @@ Features:
 - HIPAA/GDPR compliance helpers
 """
 
-import os
-import json
 import base64
+import json
 import logging
-from typing import Dict, Any, Optional
+import os
 from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
 try:
-    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
     CRYPTO_AVAILABLE = True

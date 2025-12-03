@@ -5,9 +5,9 @@ Defines the ComplianceRule and ComplianceViolation data structures
 used throughout the compliance evaluation pipeline.
 """
 
-from typing import List, Dict, Optional
 from dataclasses import dataclass
 from enum import Enum
+from typing import Dict, List, Optional
 
 
 class Severity(str, Enum):
@@ -116,9 +116,7 @@ class ComplianceResult:
             "total": len(self.violations),
             "critical": len(self.critical_violations),
             "high": len(self.high_violations),
-            "medium": len(
-                [v for v in self.violations if v.severity == Severity.MEDIUM]
-            ),
+            "medium": len([v for v in self.violations if v.severity == Severity.MEDIUM]),
             "low": len([v for v in self.violations if v.severity == Severity.LOW]),
         }
 

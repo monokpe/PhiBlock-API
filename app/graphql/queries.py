@@ -2,27 +2,27 @@
 GraphQL query resolvers.
 """
 
-import strawberry
-from typing import List, Optional
 import uuid
-from sqlalchemy.orm import Session
+from typing import List, Optional
+
+import strawberry
 from sqlalchemy import desc
-from .types import TenantType, CustomerType, AuditLogType
+from sqlalchemy.orm import Session
+
 from .. import models
+from .types import AuditLogType, CustomerType, TenantType
 
 
 @strawberry.type
 class Query:
     @strawberry.field
-    def tenants(
-        self, info, page: int = 1, page_size: int = 10
-    ) -> List[TenantType]:
+    def tenants(self, info, page: int = 1, page_size: int = 10) -> List[TenantType]:
         """List all tenants (paginated)."""
         db: Session = info.context["db"]
         skip = (page - 1) * page_size
-        
+
         tenants = db.query(models.Tenant).offset(skip).limit(page_size).all()
-        
+
         # Strawberry handles mapping if fields match
         return tenants
 
@@ -39,7 +39,7 @@ class Query:
         """List customers for a specific tenant."""
         db: Session = info.context["db"]
         skip = (page - 1) * page_size
-        
+
         customers = (
             db.query(models.Customer)
             .filter(models.Customer.tenant_id == tenant_id)
@@ -56,7 +56,7 @@ class Query:
         """List audit logs for a specific tenant."""
         db: Session = info.context["db"]
         skip = (page - 1) * page_size
-        
+
         logs = (
             db.query(models.AuditLog)
             .filter(models.AuditLog.tenant_id == tenant_id)

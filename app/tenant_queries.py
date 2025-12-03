@@ -5,31 +5,33 @@ This module provides helper functions and decorators to ensure all database
 queries are automatically filtered by the current tenant context.
 """
 
-from typing import Type, TypeVar, Optional
-from functools import wraps
-from sqlalchemy.orm import Session, Query
-from fastapi import HTTPException, status
 import uuid
+from functools import wraps
+from typing import Optional, Type, TypeVar
 
-from .middleware import get_current_tenant
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Query, Session
+
 from . import models
+from .middleware import get_current_tenant
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def require_tenant():
     """
     Decorator to ensure tenant context exists for an endpoint.
-    
+
     Raises HTTPException if no tenant context is set.
     Use this on endpoints that require tenant isolation.
-    
+
     Example:
         @app.get("/customers")
         @require_tenant()
         def get_customers(db: Session = Depends(get_db)):
             return get_tenant_query(db, Customer).all()
     """
+
     def decorator(func):
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
@@ -40,7 +42,7 @@ def require_tenant():
                     detail="Tenant context not set. Authentication required.",
                 )
             return await func(*args, **kwargs)
-        
+
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
             tenant_id = get_current_tenant()
@@ -50,57 +52,58 @@ def require_tenant():
                     detail="Tenant context not set. Authentication required.",
                 )
             return func(*args, **kwargs)
-        
+
         # Return async wrapper if function is async, otherwise sync
         import inspect
+
         if inspect.iscoroutinefunction(func):
             return async_wrapper
         return sync_wrapper
-    
+
     return decorator
 
 
 def get_tenant_query(db: Session, model: Type[T]) -> Query:
     """
     Create a query pre-filtered by the current tenant.
-    
+
     This function automatically adds a filter for tenant_id based on the
     current request context. Use this instead of db.query() for all
     tenant-scoped models.
-    
+
     Args:
         db: SQLAlchemy database session
         model: The model class to query (must have tenant_id column)
-        
+
     Returns:
         A Query object filtered by the current tenant
-        
+
     Raises:
         HTTPException: If no tenant context is set
         AttributeError: If the model doesn't have a tenant_id column
-        
+
     Example:
         # Instead of:
         customers = db.query(Customer).all()
-        
+
         # Use:
         customers = get_tenant_query(db, Customer).all()
     """
     tenant_id = get_current_tenant()
-    
+
     if tenant_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Tenant context not set. Authentication required.",
         )
-    
+
     # Verify the model has tenant_id
-    if not hasattr(model, 'tenant_id'):
+    if not hasattr(model, "tenant_id"):
         raise AttributeError(
             f"Model {model.__name__} does not have a tenant_id column. "
             f"Cannot apply tenant filtering."
         )
-    
+
     return db.query(model).filter(model.tenant_id == tenant_id)
 
 
@@ -111,19 +114,19 @@ def get_tenant_item(
 ) -> Optional[T]:
     """
     Get a single item by ID, ensuring it belongs to the current tenant.
-    
+
     This is a convenience function that combines tenant filtering with
     ID lookup. It prevents cross-tenant access by verifying both the
     item ID and tenant ownership.
-    
+
     Args:
         db: SQLAlchemy database session
         model: The model class to query
         item_id: The UUID of the item to retrieve
-        
+
     Returns:
         The item if found and belongs to current tenant, None otherwise
-        
+
     Example:
         customer = get_tenant_item(db, Customer, customer_id)
         if not customer:
@@ -139,22 +142,22 @@ def verify_tenant_ownership(
 ) -> T:
     """
     Verify an item exists and belongs to the current tenant.
-    
+
     Similar to get_tenant_item but raises HTTPException if not found.
     Use this when you want to fail fast if the item doesn't exist or
     doesn't belong to the tenant.
-    
+
     Args:
         db: SQLAlchemy database session
         model: The model class to query
         item_id: The UUID of the item to verify
-        
+
     Returns:
         The item if found and belongs to current tenant
-        
+
     Raises:
         HTTPException: If item not found or doesn't belong to tenant
-        
+
     Example:
         customer = verify_tenant_ownership(db, Customer, customer_id)
         # customer is guaranteed to exist and belong to current tenant
@@ -171,31 +174,31 @@ def verify_tenant_ownership(
 class TenantQueryMixin:
     """
     SQLAlchemy mixin for models that support tenant filtering.
-    
+
     Add this to your model classes to get automatic tenant filtering methods.
-    
+
     Example:
         class Customer(Base, TenantQueryMixin):
             __tablename__ = "customers"
             id = Column(UUID, primary_key=True)
             tenant_id = Column(UUID, ForeignKey("tenants.id"))
             name = Column(String)
-            
+
         # Usage:
         customers = Customer.for_tenant(db).all()
         customer = Customer.get_for_tenant(db, customer_id)
     """
-    
+
     @classmethod
     def for_tenant(cls, db: Session) -> Query:
         """Get a query filtered by current tenant."""
         return get_tenant_query(db, cls)
-    
+
     @classmethod
     def get_for_tenant(cls, db: Session, item_id: uuid.UUID):
         """Get a single item by ID for current tenant."""
         return get_tenant_item(db, cls, item_id)
-    
+
     @classmethod
     def verify_ownership(cls, db: Session, item_id: uuid.UUID):
         """Verify item exists and belongs to current tenant."""

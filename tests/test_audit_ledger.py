@@ -1,7 +1,9 @@
 import os
 import tempfile
-from app.audit_ledger import AuditLedger
+
 from cryptography.hazmat.primitives import hashes
+
+from app.audit_ledger import AuditLedger
 
 
 def test_append_and_verify(monkeypatch):

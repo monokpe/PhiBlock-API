@@ -14,34 +14,34 @@ Components:
 - risk_scoring: Risk assessment and scoring engine
 """
 
-from app.compliance.models import (
-    ComplianceRule,
-    ComplianceViolation,
-    ComplianceResult,
-    ComplianceFramework,
-    Severity,
-    ComplianceAction,
-)
 from app.compliance.engine import (
     ComplianceEngine,
     get_compliance_engine,
     reset_compliance_engine,
 )
-from app.compliance.rules import RuleLoader, load_compliance_rules
+from app.compliance.models import (
+    ComplianceAction,
+    ComplianceFramework,
+    ComplianceResult,
+    ComplianceRule,
+    ComplianceViolation,
+    Severity,
+)
 from app.compliance.redaction import (
+    RedactionPipeline,
     RedactionService,
     RedactionStrategy,
-    RedactionPipeline,
     get_redaction_service,
     reset_redaction_service,
 )
 from app.compliance.risk_scoring import (
-    RiskScorer,
+    OverallRiskAssessment,
     RiskLevel,
     RiskScore,
-    OverallRiskAssessment,
+    RiskScorer,
     get_risk_scorer,
 )
+from app.compliance.rules import RuleLoader, load_compliance_rules
 
 __all__ = [
     "ComplianceRule",

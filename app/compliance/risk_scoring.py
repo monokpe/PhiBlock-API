@@ -10,10 +10,11 @@ Provides weighted scoring for:
 Risk levels: LOW (0-30), MEDIUM (30-60), HIGH (60-85), CRITICAL (85-100)
 """
 
-from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
-from app.compliance.models import Severity, ComplianceViolation
+from typing import Dict, List, Optional, Tuple
+
+from app.compliance.models import ComplianceViolation, Severity
 
 
 class RiskLevel(Enum):
@@ -247,9 +248,7 @@ class RiskScorer:
                 compliance_scores.append(risk.value)
 
             compliance_score = (
-                sum(compliance_scores) / len(compliance_scores)
-                if compliance_scores
-                else 0.0
+                sum(compliance_scores) / len(compliance_scores) if compliance_scores else 0.0
             )
 
         # Calculate overall score (weighted average)
@@ -270,9 +269,7 @@ class RiskScorer:
         )
 
         # Count critical items
-        critical_count = len(
-            [r for r in individual_risks if r.level == RiskLevel.CRITICAL]
-        )
+        critical_count = len([r for r in individual_risks if r.level == RiskLevel.CRITICAL])
 
         return OverallRiskAssessment(
             overall_score=overall_score,
@@ -309,9 +306,7 @@ class RiskScorer:
 
         # Critical level recommendations
         if overall_level == RiskLevel.CRITICAL:
-            recommendations.append(
-                "🚨 CRITICAL: Block or quarantine content immediately"
-            )
+            recommendations.append("🚨 CRITICAL: Block or quarantine content immediately")
             recommendations.append("Contact security team for incident response")
 
         # High level recommendations
@@ -330,18 +325,14 @@ class RiskScorer:
         has_compliance = any("COMPLIANCE" in r.component for r in risks)
 
         if has_pii and entity_count > 5:
-            recommendations.append(
-                "High volume of PII detected - consider bulk redaction"
-            )
+            recommendations.append("High volume of PII detected - consider bulk redaction")
 
         if has_injection:
             recommendations.append("Implement prompt input validation and sanitization")
 
         if has_compliance:
             critical_violations = [
-                r
-                for r in risks
-                if "COMPLIANCE" in r.component and r.level == RiskLevel.CRITICAL
+                r for r in risks if "COMPLIANCE" in r.component and r.level == RiskLevel.CRITICAL
             ]
             if critical_violations:
                 frameworks = set(r.component.split("_")[1] for r in critical_violations)

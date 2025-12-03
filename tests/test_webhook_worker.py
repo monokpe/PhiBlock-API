@@ -14,9 +14,7 @@ def make_mock_with_get(result):
 
 def test_worker_sends_webhook_on_success(monkeypatch):
     # Mock subtask calls to return successful results
-    mock_pii = make_mock_with_get(
-        {"status": "success", "entities": ["x"], "entity_count": 1}
-    )
+    mock_pii = make_mock_with_get({"status": "success", "entities": ["x"], "entity_count": 1})
     mock_compliance = make_mock_with_get(
         {
             "status": "success",

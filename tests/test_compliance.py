@@ -8,18 +8,20 @@ Tests for:
 - Multiple framework checking
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
+
 from app.compliance import (
+    ComplianceAction,
     ComplianceEngine,
+    ComplianceFramework,
     ComplianceRule,
     ComplianceViolation,
-    ComplianceFramework,
-    Severity,
-    ComplianceAction,
     RuleLoader,
-    load_compliance_rules,
+    Severity,
     get_compliance_engine,
+    load_compliance_rules,
     reset_compliance_engine,
 )
 
@@ -75,11 +77,7 @@ class TestRuleLoader:
 
         # Try to load existing rules
         hipaa_file = (
-            Path(__file__).parent.parent
-            / "app"
-            / "compliance"
-            / "definitions"
-            / "hipaa.yaml"
+            Path(__file__).parent.parent / "app" / "compliance" / "definitions" / "hipaa.yaml"
         )
         if hipaa_file.exists():
             rules = loader.load_rules_from_file(str(hipaa_file))
@@ -348,11 +346,7 @@ class TestCompleteWorkflow:
 
         # Try to load actual YAML rules
         hipaa_file = (
-            Path(__file__).parent.parent
-            / "app"
-            / "compliance"
-            / "definitions"
-            / "hipaa.yaml"
+            Path(__file__).parent.parent / "app" / "compliance" / "definitions" / "hipaa.yaml"
         )
         if hipaa_file.exists():
             all_rules = loader.load_rules_from_file(str(hipaa_file))

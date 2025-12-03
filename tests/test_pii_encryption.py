@@ -1,6 +1,6 @@
 import os
 
-from app.pii_encryption import PIIEncryptor, PIIEncryptedType, get_pii_encryptor
+from app.pii_encryption import PIIEncryptedType, PIIEncryptor, get_pii_encryptor
 
 
 def test_encryptor_disabled_by_default(tmp_env=None):

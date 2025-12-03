@@ -15,12 +15,12 @@ Behavior:
 from __future__ import annotations
 
 import base64
-import os
 import logging
+import os
 from typing import Optional
 
 from cryptography.fernet import Fernet, InvalidToken
-from sqlalchemy.types import TypeDecorator, TEXT
+from sqlalchemy.types import TEXT, TypeDecorator
 
 from .secrets import secrets
 

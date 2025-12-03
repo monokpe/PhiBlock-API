@@ -6,14 +6,16 @@ Supports validation and rule merging from multiple sources.
 """
 
 import os
-import yaml
-from typing import List, Dict, Any, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import yaml
+
 from app.compliance.models import (
-    ComplianceRule,
-    ComplianceFramework,
-    Severity,
     ComplianceAction,
+    ComplianceFramework,
+    ComplianceRule,
+    Severity,
 )
 
 
@@ -49,9 +51,7 @@ class RuleLoader:
             return rules
 
         # Find all YAML files
-        yaml_files = list(self.rules_dir.glob("*.yaml")) + list(
-            self.rules_dir.glob("*.yml")
-        )
+        yaml_files = list(self.rules_dir.glob("*.yaml")) + list(self.rules_dir.glob("*.yml"))
 
         for yaml_file in sorted(yaml_files):
             try:
@@ -178,9 +178,7 @@ class RuleLoader:
         for rule in rules:
             # Count by framework
             framework = rule.framework
-            report["by_framework"][framework] = (
-                report["by_framework"].get(framework, 0) + 1
-            )
+            report["by_framework"][framework] = report["by_framework"].get(framework, 0) + 1
 
             # Count by severity
             severity = rule.severity.name.lower()
@@ -197,9 +195,7 @@ class RuleLoader:
                 try:
                     re.compile(pattern)
                 except re.error as e:
-                    report["issues"].append(
-                        f"Invalid regex in rule {rule.id}: {pattern} - {e}"
-                    )
+                    report["issues"].append(f"Invalid regex in rule {rule.id}: {pattern} - {e}")
 
         return report
 

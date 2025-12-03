@@ -12,26 +12,28 @@ Endpoint pattern:
 - GET /api/v1/tasks/{task_id}/result - Get task result
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Query
-from pydantic import BaseModel, Field
-from typing import Dict, Any, List, Optional
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
 from celery.result import AsyncResult
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from workers.celery_app import (
-    app,
-    detect_pii_async,
-    check_compliance_async,
-    redact_async,
-    score_risk_async,
     analyze_complete_async,
+    app,
+    check_compliance_async,
+    detect_pii_async,
     get_task_result,
     get_task_status,
+    redact_async,
+    score_risk_async,
 )
-from .token_tracking import get_token_tracker
-from .webhooks import get_webhook_notifier, WebhookEventType, WebhookPayload
+
 from . import webhook_security
+from .token_tracking import get_token_tracker
+from .webhooks import WebhookEventType, WebhookPayload, get_webhook_notifier
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["async"])
@@ -97,9 +99,7 @@ def _send_webhook_notification(
                 try:
                     extra_headers = webhook_security.sign_payload(payload, secret)
                 except Exception:
-                    logger.exception(
-                        "Failed to sign webhook payload; continuing without signature"
-                    )
+                    logger.exception("Failed to sign webhook payload; continuing without signature")
 
         # Send webhook (this handles retries internally)
         success, error_msg, attempt = notifier.send_webhook(
@@ -154,9 +154,7 @@ class AsyncTaskResponse(BaseModel):
     """Response model for async tasks"""
 
     task_id: str = Field(..., description="Celery task ID")
-    status: str = Field(
-        ..., description="Task status (PENDING, STARTED, SUCCESS, FAILURE)"
-    )
+    status: str = Field(..., description="Task status (PENDING, STARTED, SUCCESS, FAILURE)")
     submitted_at: datetime
     message: str = Field(default="Task submitted successfully")
 
@@ -252,9 +250,7 @@ async def submit_analysis_task(
         Task ID and status
     """
     try:
-        logger.info(
-            f"[submit_analysis_task] Submitting analysis for {len(request.text)} chars"
-        )
+        logger.info(f"[submit_analysis_task] Submitting analysis for {len(request.text)} chars")
 
         # Submit task to Celery
         task = analyze_complete_async.delay(
@@ -329,9 +325,7 @@ async def check_compliance_task(
 ) -> AsyncTaskResponse:
     """Submit text for async compliance checking."""
     try:
-        logger.info(
-            f"[check_compliance_task] Submitting compliance check for {len(text)} chars"
-        )
+        logger.info(f"[check_compliance_task] Submitting compliance check for {len(text)} chars")
 
         # For compliance, we need entities first (empty for demo)
         # In real usage, would call detect_pii first or use results from prior analysis
@@ -360,9 +354,7 @@ async def redact_task(
 ) -> AsyncTaskResponse:
     """Submit text for async redaction."""
     try:
-        logger.info(
-            f"[redact_task] Submitting redaction for {len(text)} chars using {strategy}"
-        )
+        logger.info(f"[redact_task] Submitting redaction for {len(text)} chars using {strategy}")
 
         # For redaction, we need entities (empty for demo)
         task = redact_async.delay(text, [], strategy=strategy)
@@ -443,9 +435,7 @@ async def get_task_result_endpoint(task_id: str) -> Dict[str, Any]:
         if result_dict["status"] == "pending":
             raise HTTPException(status_code=202, detail="Task is still processing")
         elif result_dict["status"] == "error":
-            raise HTTPException(
-                status_code=400, detail=result_dict.get("error", "Task failed")
-            )
+            raise HTTPException(status_code=400, detail=result_dict.get("error", "Task failed"))
 
         return result_dict.get("result", {})
 

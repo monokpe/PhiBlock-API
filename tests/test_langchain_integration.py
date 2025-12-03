@@ -1,9 +1,12 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from integrations.langchain_integration import GuardrailsCallbackHandler, GuardrailsRunnable
 
+
 class TestLangChainIntegration:
-    
+
     @pytest.fixture
     def mock_requests(self):
         with patch("integrations.langchain_integration.requests") as mock:
@@ -14,19 +17,16 @@ class TestLangChainIntegration:
         # Setup mock response
         mock_response = MagicMock()
         mock_response.json.return_value = {
-            "detections": {
-                "pii_found": True,
-                "injection_detected": False
-            }
+            "detections": {"pii_found": True, "injection_detected": False}
         }
         mock_requests.post.return_value = mock_response
-        
+
         handler = GuardrailsCallbackHandler(raise_on_violation=True)
-        
+
         # Should raise ValueError
         with pytest.raises(ValueError) as exc:
             handler.on_llm_start({}, ["My name is John"])
-            
+
         assert "Guardrails Violation" in str(exc.value)
         assert "PII detected" in str(exc.value)
 
@@ -34,13 +34,10 @@ class TestLangChainIntegration:
         """Test that callback handler passes when no violation"""
         mock_response = MagicMock()
         mock_response.json.return_value = {
-            "detections": {
-                "pii_found": False,
-                "injection_detected": False
-            }
+            "detections": {"pii_found": False, "injection_detected": False}
         }
         mock_requests.post.return_value = mock_response
-        
+
         handler = GuardrailsCallbackHandler(raise_on_violation=True)
         # Should not raise
         handler.on_llm_start({}, ["Safe prompt"])
@@ -50,11 +47,11 @@ class TestLangChainIntegration:
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "sanitized_prompt": "Hello [PERSON]",
-            "detections": {"pii_found": True}
+            "detections": {"pii_found": True},
         }
         mock_requests.post.return_value = mock_response
-        
+
         runnable = GuardrailsRunnable()
         result = runnable.invoke("Hello John")
-        
+
         assert result == "Hello [PERSON]"

@@ -10,11 +10,12 @@ Async task processing for:
 Uses Redis as broker and result backend.
 """
 
-import os
-from celery import Celery, group, chain
-from kombu import Exchange, Queue
-from typing import Dict, List, Any, Optional
 import logging
+import os
+from typing import Any, Dict, List, Optional
+
+from celery import Celery, chain, group
+from kombu import Exchange, Queue
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -188,9 +189,7 @@ def check_compliance_async(
             ],
         }
 
-        logger.info(
-            f"[check_compliance_async] Found {len(result_obj.violations)} violations"
-        )
+        logger.info(f"[check_compliance_async] Found {len(result_obj.violations)} violations")
         return result
 
     except Exception as exc:
@@ -224,9 +223,7 @@ def redact_async(
     try:
         from app.compliance.redaction import RedactionService, RedactionStrategy
 
-        logger.info(
-            f"[redact_async] Redacting {len(entities)} entities using {strategy}"
-        )
+        logger.info(f"[redact_async] Redacting {len(entities)} entities using {strategy}")
 
         # Convert strategy string to enum
         strategy_map = {
@@ -236,9 +233,7 @@ def redact_async(
             "hash": RedactionStrategy.HASH_REPLACEMENT,
         }
 
-        redaction_strategy = strategy_map.get(
-            strategy, RedactionStrategy.TOKEN_REPLACEMENT
-        )
+        redaction_strategy = strategy_map.get(strategy, RedactionStrategy.TOKEN_REPLACEMENT)
 
         # Redact
         service = RedactionService(redaction_strategy)
@@ -287,9 +282,9 @@ def score_risk_async(
     try:
         from app.compliance import RiskScorer
         from app.compliance.models import (
+            ComplianceAction,
             ComplianceViolation,
             Severity,
-            ComplianceAction,
         )
 
         logger.info(f"[score_risk_async] Scoring {len(entities)} entities")
@@ -389,9 +384,7 @@ def analyze_complete_async(
         entities = pii_result["entities"]
 
         # Step 2: Check compliance
-        compliance_result = check_compliance_async.delay(
-            text, entities, frameworks
-        ).get(timeout=60)
+        compliance_result = check_compliance_async.delay(text, entities, frameworks).get(timeout=60)
         if compliance_result["status"] != "success":
             return {"status": "error", "error": "Compliance check failed"}
 
@@ -438,20 +431,19 @@ def analyze_complete_async(
         if webhook_url:
             try:
                 # Import here to avoid module cycles
+                from app import webhook_security
                 from app.webhooks import (
-                    get_webhook_notifier,
                     WebhookEventType,
                     WebhookPayload,
+                    get_webhook_notifier,
                 )
-                from app import webhook_security
 
                 notifier = get_webhook_notifier()
                 payload = WebhookPayload.build_task_event(
                     event_type=WebhookEventType.TASK_COMPLETED,
                     task_id=(
                         self.request.id
-                        if hasattr(self, "request")
-                        and getattr(self.request, "id", None)
+                        if hasattr(self, "request") and getattr(self.request, "id", None)
                         else ""
                     ),
                     task_name="analyze_complete_async",
@@ -464,9 +456,7 @@ def analyze_complete_async(
                     secret = webhook_security.get_signing_secret()
                     if secret:
                         try:
-                            extra_headers = webhook_security.sign_payload(
-                                payload, secret
-                            )
+                            extra_headers = webhook_security.sign_payload(payload, secret)
                         except Exception:
                             logger.exception(
                                 "Failed to sign webhook payload in worker; sending unsigned"
@@ -490,9 +480,9 @@ def analyze_complete_async(
         if "webhook_url" in locals() and webhook_url:
             try:
                 from app.webhooks import (
-                    get_webhook_notifier,
                     WebhookEventType,
                     WebhookPayload,
+                    get_webhook_notifier,
                 )
 
                 notifier = get_webhook_notifier()
@@ -500,17 +490,14 @@ def analyze_complete_async(
                     event_type=WebhookEventType.TASK_FAILED,
                     task_id=(
                         self.request.id
-                        if hasattr(self, "request")
-                        and getattr(self.request, "id", None)
+                        if hasattr(self, "request") and getattr(self.request, "id", None)
                         else ""
                     ),
                     task_name="analyze_complete_async",
                     status="FAILURE",
                     error=str(exc),
                 )
-                notifier.send_webhook(
-                    webhook_url, payload, WebhookEventType.TASK_FAILED
-                )
+                notifier.send_webhook(webhook_url, payload, WebhookEventType.TASK_FAILED)
             except Exception:
                 logger.exception("Failed to send failure webhook from worker")
 
@@ -569,80 +556,85 @@ def get_task_status(task_id: str) -> str:
 def sync_usage_to_stripe():
     """
     Periodic task: Sync token usage to Stripe.
-    
+
     Aggregates usage from TokenUsage table and reports to Stripe.
     """
-    from app.database import SessionLocal
-    from app.models import Tenant, TokenUsage
-    from app.billing import billing_service
-    from sqlalchemy import func
     import time
 
+    from sqlalchemy import func
+
+    from app.billing import billing_service
+    from app.database import SessionLocal
+    from app.models import Tenant, TokenUsage
+
     logger.info("[sync_usage_to_stripe] Starting usage sync")
-    
+
     db = SessionLocal()
     try:
         # 1. Get all tenants with active Stripe subscriptions
-        tenants = db.query(Tenant).filter(
-            Tenant.stripe_subscription_id.isnot(None)
-        ).all()
-        
+        tenants = db.query(Tenant).filter(Tenant.stripe_subscription_id.isnot(None)).all()
+
         for tenant in tenants:
             try:
                 # 2. Aggregate unreported usage for this tenant
                 # We sum up total_tokens for all records where reported_to_stripe is False
-                usage_stats = db.query(
-                    func.sum(TokenUsage.total_tokens).label("total_tokens"),
-                    func.count(TokenUsage.id).label("request_count")
-                ).filter(
-                    TokenUsage.tenant_id == tenant.id,
-                    TokenUsage.reported_to_stripe == False
-                ).first()
-                
+                usage_stats = (
+                    db.query(
+                        func.sum(TokenUsage.total_tokens).label("total_tokens"),
+                        func.count(TokenUsage.id).label("request_count"),
+                    )
+                    .filter(
+                        TokenUsage.tenant_id == tenant.id, TokenUsage.reported_to_stripe == False
+                    )
+                    .first()
+                )
+
                 total_tokens = usage_stats.total_tokens or 0
                 request_count = usage_stats.request_count or 0
-                
+
                 if total_tokens > 0:
                     logger.info(f"Reporting {total_tokens} tokens for tenant {tenant.slug}")
-                    
+
                     # 3. Report to Stripe
-                    # We need the subscription item ID. For this MVP, we'll assume 
+                    # We need the subscription item ID. For this MVP, we'll assume
                     # the subscription has one item and we can get it from Stripe API
-                    # OR we store subscription_item_id in DB. 
+                    # OR we store subscription_item_id in DB.
                     # For now, let's fetch the subscription to get the item ID.
-                    
+
                     # Optimization: Store subscription_item_id in Tenant model in future.
                     import stripe
+
                     if billing_service.api_key:
                         subscription = stripe.Subscription.retrieve(tenant.stripe_subscription_id)
-                        if subscription and subscription['items']['data']:
-                            subscription_item_id = subscription['items']['data'][0].id
-                            
+                        if subscription and subscription["items"]["data"]:
+                            subscription_item_id = subscription["items"]["data"][0].id
+
                             success = billing_service.report_usage(
-                                subscription_item_id, 
-                                int(total_tokens)
+                                subscription_item_id, int(total_tokens)
                             )
-                            
+
                             if success:
                                 # 4. Mark records as reported
                                 db.query(TokenUsage).filter(
                                     TokenUsage.tenant_id == tenant.id,
-                                    TokenUsage.reported_to_stripe == False
+                                    TokenUsage.reported_to_stripe == False,
                                 ).update({TokenUsage.reported_to_stripe: True})
-                                
+
                                 db.commit()
-                                logger.info(f"Successfully synced {total_tokens} tokens for {tenant.slug}")
+                                logger.info(
+                                    f"Successfully synced {total_tokens} tokens for {tenant.slug}"
+                                )
                             else:
                                 logger.error(f"Failed to report usage for {tenant.slug}")
                         else:
                             logger.error(f"No subscription items found for {tenant.slug}")
                     else:
                         logger.warning("Stripe API key not set, skipping report")
-                        
+
             except Exception as e:
                 logger.error(f"Error processing tenant {tenant.slug}: {e}")
                 db.rollback()
-                
+
     except Exception as e:
         logger.error(f"[sync_usage_to_stripe] Error: {e}")
     finally:

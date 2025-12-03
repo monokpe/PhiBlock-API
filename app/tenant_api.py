@@ -5,17 +5,18 @@ Provides CRUD operations for managing tenants in the system.
 """
 
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from .database import get_db
 from .models import Tenant
 from .schemas.tenant import (
     TenantCreate,
-    TenantUpdate,
-    TenantResponse,
     TenantListResponse,
+    TenantResponse,
+    TenantUpdate,
 )
 
 router = APIRouter(prefix="/v1/tenants", tags=["Tenants"])
@@ -28,22 +29,21 @@ def create_tenant(
 ):
     """
     Create a new tenant.
-    
+
     - **name**: Tenant name (required)
     - **slug**: URL-safe identifier (auto-generated from name if not provided)
     - **plan**: Subscription plan (basic, pro, enterprise)
     """
     # Generate slug if not provided
     slug = tenant_data.generate_slug()
-    
+
     # Check if slug already exists
     existing = db.query(Tenant).filter(Tenant.slug == slug).first()
     if existing:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Tenant with slug '{slug}' already exists"
+            status_code=status.HTTP_409_CONFLICT, detail=f"Tenant with slug '{slug}' already exists"
         )
-    
+
     # Create tenant
     tenant = Tenant(
         name=tenant_data.name,
@@ -53,13 +53,13 @@ def create_tenant(
 
     # Create Stripe Customer
     from .billing import billing_service
+
     stripe_id = billing_service.create_customer(
-        email=f"admin@{slug}.com", # Placeholder email
-        name=tenant_data.name
+        email=f"admin@{slug}.com", name=tenant_data.name  # Placeholder email
     )
     if stripe_id:
         tenant.stripe_customer_id = stripe_id
-    
+
     try:
         db.add(tenant)
         db.commit()
@@ -68,8 +68,7 @@ def create_tenant(
     except IntegrityError:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Tenant with this slug already exists"
+            status_code=status.HTTP_409_CONFLICT, detail="Tenant with this slug already exists"
         )
 
 
@@ -81,23 +80,19 @@ def list_tenants(
 ):
     """
     List all tenants with pagination.
-    
+
     - **page**: Page number (default: 1)
     - **page_size**: Items per page (default: 10, max: 100)
     """
     # Get total count
     total = db.query(Tenant).count()
-    
+
     # Get paginated results
     offset = (page - 1) * page_size
     tenants = (
-        db.query(Tenant)
-        .order_by(Tenant.created_at.desc())
-        .offset(offset)
-        .limit(page_size)
-        .all()
+        db.query(Tenant).order_by(Tenant.created_at.desc()).offset(offset).limit(page_size).all()
     )
-    
+
     return TenantListResponse(
         tenants=tenants,
         total=total,
@@ -113,17 +108,14 @@ def get_tenant(
 ):
     """
     Get a specific tenant by ID.
-    
+
     - **tenant_id**: UUID of the tenant
     """
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-    
+
     if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tenant not found"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
+
     return tenant
 
 
@@ -135,26 +127,23 @@ def update_tenant(
 ):
     """
     Update a tenant.
-    
+
     - **tenant_id**: UUID of the tenant
     - **name**: New tenant name (optional)
     - **plan**: New subscription plan (optional)
     """
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-    
+
     if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tenant not found"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
+
     # Update fields if provided
     if tenant_data.name is not None:
         tenant.name = tenant_data.name
-    
+
     if tenant_data.plan is not None:
         tenant.plan = tenant_data.plan
-    
+
     try:
         db.commit()
         db.refresh(tenant)
@@ -162,8 +151,7 @@ def update_tenant(
     except IntegrityError:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Update failed due to constraint violation"
+            status_code=status.HTTP_409_CONFLICT, detail="Update failed due to constraint violation"
         )
 
 
@@ -174,19 +162,16 @@ def delete_tenant(
 ):
     """
     Delete a tenant.
-    
+
     **Warning**: This will delete the tenant and may affect related data.
-    
+
     - **tenant_id**: UUID of the tenant
     """
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-    
+
     if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tenant not found"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
+
     # For now, hard delete. In production, consider soft delete.
     try:
         db.delete(tenant)
@@ -195,5 +180,5 @@ def delete_tenant(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Cannot delete tenant with existing related data. Delete related records first."
+            detail="Cannot delete tenant with existing related data. Delete related records first.",
         )

@@ -2,9 +2,10 @@
 Pydantic schemas for analytics API.
 """
 
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
-from datetime import datetime, date
 
 
 class AnalyticsStatsResponse(BaseModel):

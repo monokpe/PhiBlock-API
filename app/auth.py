@@ -1,8 +1,10 @@
-import secrets
 import hashlib
+import secrets
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyHeader
 from sqlalchemy.orm import Session
+
 from . import models
 from .database import get_db
 
@@ -28,9 +30,9 @@ def create_api_key(db: Session, customer_id: int) -> tuple[str, models.APIKey]:
 
     # Fetch customer to get tenant_id
     # Use tenant-aware query to ensure customer belongs to current tenant
-    from .tenant_queries import get_tenant_item
     from .middleware import get_current_tenant
-    
+    from .tenant_queries import get_tenant_item
+
     tenant_id = get_current_tenant()
     if tenant_id:
         # If tenant context exists, verify customer belongs to this tenant
@@ -83,9 +85,7 @@ def get_api_key_from_db(db: Session, key: str) -> models.APIKey | None:
     return None
 
 
-def get_current_user(
-    api_key: str = Depends(api_key_header), db: Session = Depends(get_db)
-):
+def get_current_user(api_key: str = Depends(api_key_header), db: Session = Depends(get_db)):
     if not api_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -103,6 +103,7 @@ def get_current_user(
 
     # Set tenant context for this request
     from .middleware import set_current_tenant
+
     set_current_tenant(db_api_key.tenant_id)
 
     return db_api_key

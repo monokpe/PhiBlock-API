@@ -1,12 +1,12 @@
+import os
+import threading
+from datetime import datetime, timezone
+
 import redis
 from fastapi import Depends, HTTPException, status
 
 from . import models
 from .auth import get_current_user
-
-import os
-import threading
-from datetime import datetime, timezone
 
 # Connect to Redis (lazy-ish, but we handle connection errors at runtime)
 redis_host = "localhost" if os.environ.get("TESTING") else "redis"

@@ -10,18 +10,19 @@ Tests cover:
 - Response formats
 """
 
+from datetime import datetime
+from typing import Any, Dict
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime
-from typing import Dict, Any
 
-from app.main import app
 from app.async_endpoints import (
     AsyncAnalysisRequest,
     AsyncTaskResponse,
     TaskStatusResponse,
 )
+from app.main import app
 
 
 @pytest.fixture
@@ -118,9 +119,7 @@ class TestAsyncAnalysisSubmission:
 
     def test_submit_analysis_validation_min_length(self, client):
         """Test text minimum length validation"""
-        response = client.post(
-            "/api/v1/analyze/async", json={"text": ""}  # Empty string
-        )
+        response = client.post("/api/v1/analyze/async", json={"text": ""})  # Empty string
 
         assert response.status_code == 422  # Validation error
 
@@ -219,9 +218,7 @@ class TestRedactionAsyncSubmission:
         """Test submitting redaction task"""
         mock_task.delay.return_value = MagicMock(id="redact_task_1")
 
-        response = client.post(
-            "/api/v1/redact/async", params={"text": "John Doe lives in NYC"}
-        )
+        response = client.post("/api/v1/redact/async", params={"text": "John Doe lives in NYC"})
 
         assert response.status_code == 200
         data = response.json()

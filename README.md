@@ -79,7 +79,7 @@ Guardrails is a real-time API firewall that filters AI prompts before they reach
 #### 1. Clone the Repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/monokpe/Guardrails
 cd guardrails
 ```
 
@@ -509,6 +509,17 @@ guardrails/
 - [x] LangChain plugin
 - [x] Bubble.io connector
 - [x] Zapier integration
+
+### ✅ Completed (Phase 4.1 - Performance Optimization)
+
+- [x] Database composite indexes for tenant queries
+- [x] Optimized analytics query performance
+
+### ✅ Completed (Phase 5.1 - Billing & Metering)
+
+- [x] Stripe usage reporting worker
+- [x] Token usage aggregation and sync
+- [x] Automated billing synchronization
 
 ### 📝 Planned
 
