@@ -1,14 +1,23 @@
+import os
 import time
 import uuid
 
+import sentry_sdk
 from fastapi import Depends, FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from strawberry.fastapi import GraphQLRouter
 
 from . import auth, logging, models
+from .analytics import router as analytics_router
 from .async_endpoints import router as async_router
 from .database import get_db
+from .graphql.context import get_context
+from .graphql.schema import schema
 from .middleware import TenantContextMiddleware
+from .performance_monitoring import router as performance_router
 from .rate_limiting import RateLimiter
+from .security import register_security
 from .tenant_api import router as tenant_router
 
 
@@ -23,13 +32,7 @@ class HealthCheckResponse(BaseModel):
     version: str
 
 
-rate_limiter = RateLimiter(requests_per_minute=100)
-
-import os
-
 # Initialize Sentry
-import sentry_sdk
-
 SENTRY_DSN = os.getenv("SENTRY_DSN")
 if SENTRY_DSN:
     sentry_sdk.init(
@@ -48,8 +51,6 @@ app = FastAPI(
 app.add_middleware(TenantContextMiddleware)
 
 # Register security middleware (CORS + request signing)
-from .security import register_security
-
 register_security(app)
 
 # Include routers
@@ -57,29 +58,16 @@ app.include_router(async_router)
 app.include_router(tenant_router)
 
 # GraphQL API
-from strawberry.fastapi import GraphQLRouter
-
-from .graphql.context import get_context
-from .graphql.schema import schema
-
 graphql_app = GraphQLRouter(schema, context_getter=get_context)
 app.include_router(graphql_app, prefix="/graphql")
 
 # Analytics API
-from .analytics import router as analytics_router
-
 app.include_router(analytics_router)
 
 # Performance Monitoring API
-from .performance_monitoring import router as performance_router
-
 app.include_router(performance_router)
 
-import os
-
 # Static Files (Dashboard)
-from fastapi.staticfiles import StaticFiles
-
 # Ensure static directory exists
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):

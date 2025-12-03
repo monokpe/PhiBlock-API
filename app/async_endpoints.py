@@ -28,7 +28,6 @@ from workers.celery_app import (
     get_task_result,
     get_task_status,
     redact_async,
-    score_risk_async,
 )
 
 from . import webhook_security

@@ -18,11 +18,7 @@ from sqlalchemy.orm import Session
 from . import models
 from .auth import get_current_user
 from .database import get_db, get_engine_info
-from .query_optimization import (
-    IndexingStrategy,
-    QueryOptimizer,
-    get_slow_queries_report,
-)
+from .query_optimization import IndexingStrategy, QueryOptimizer, get_slow_queries_report
 
 router = APIRouter(
     prefix="/v1/performance",
@@ -40,9 +36,8 @@ async def health_check(db: Session = Depends(get_db)):
         # Test database connection
         result = db.execute("SELECT 1")
         db_healthy = result is not None
-    except Exception as e:
+    except Exception:
         db_healthy = False
-        db_error = str(e)
 
     return {
         "status": "healthy" if db_healthy else "unhealthy",

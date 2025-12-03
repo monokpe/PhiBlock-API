@@ -12,7 +12,6 @@ from typing import Optional, Type, TypeVar
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Query, Session
 
-from . import models
 from .middleware import get_current_tenant
 
 T = TypeVar("T")

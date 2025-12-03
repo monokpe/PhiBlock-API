@@ -4,20 +4,13 @@ Tenant Management API Endpoints.
 Provides CRUD operations for managing tenants in the system.
 """
 
-from typing import Optional
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .database import get_db
 from .models import Tenant
-from .schemas.tenant import (
-    TenantCreate,
-    TenantListResponse,
-    TenantResponse,
-    TenantUpdate,
-)
+from .schemas.tenant import TenantCreate, TenantListResponse, TenantResponse, TenantUpdate
 
 router = APIRouter(prefix="/v1/tenants", tags=["Tenants"])
 

@@ -4,7 +4,7 @@ GraphQL type definitions for Guardrails API.
 
 import datetime
 import uuid
-from typing import Any, List, Optional
+from typing import List, Optional
 
 import strawberry
 from strawberry.scalars import JSON

@@ -13,7 +13,6 @@ Features:
 - Event type support
 """
 
-import json
 import logging
 from datetime import datetime, timezone
 from enum import Enum
@@ -270,7 +269,7 @@ class WebhookNotifier:
                 self._log_delivery(webhook_url, event_type, False, error_msg, attempt)
                 return (False, error_msg, attempt)
 
-            except httpx.TimeoutException as e:
+            except httpx.TimeoutException:
                 error_msg = f"Timeout after {self.timeout}s"
                 if attempt < self.max_retries:
                     logger.warning(f"{error_msg}, retrying (attempt {attempt}/{self.max_retries})")

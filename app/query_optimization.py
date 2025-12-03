@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from typing import Any, Dict, List, Optional, Type
 
-from sqlalchemy import and_, desc, or_
+from sqlalchemy import desc
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy.sql import text
 

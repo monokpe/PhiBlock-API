@@ -19,7 +19,6 @@ from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
 import tiktoken
-from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -135,12 +134,14 @@ class TokenTracker:
         if token_count >= self.TOKEN_CRITICAL_THRESHOLD:
             return (
                 RiskLevel.CRITICAL,
-                f"Token count {token_count} exceeds critical threshold {self.TOKEN_CRITICAL_THRESHOLD}",
+                f"Token count {token_count} exceeds critical threshold "
+                f"{self.TOKEN_CRITICAL_THRESHOLD}",
             )
         elif token_count >= self.TOKEN_WARNING_THRESHOLD:
             return (
                 RiskLevel.WARNING,
-                f"Token count {token_count} exceeds warning threshold {self.TOKEN_WARNING_THRESHOLD}",
+                f"Token count {token_count} exceeds warning threshold "
+                f"{self.TOKEN_WARNING_THRESHOLD}",
             )
         return (RiskLevel.SAFE, None)
 

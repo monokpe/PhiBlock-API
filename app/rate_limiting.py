@@ -43,7 +43,10 @@ class RateLimiter:
                     if cnt >= rate_limit:
                         raise HTTPException(
                             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                            detail=f"Rate limit exceeded. Allowed: {rate_limit} requests per minute.",
+                            detail=(
+                                f"Rate limit exceeded. Allowed: {rate_limit} "
+                                f"requests per minute."
+                            ),
                         )
                     _fallback_counters[key] = (mk, cnt + 1)
                     return True
@@ -61,7 +64,10 @@ class RateLimiter:
                     if cnt >= rate_limit:
                         raise HTTPException(
                             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                            detail=f"Rate limit exceeded. Allowed: {rate_limit} requests per minute.",
+                            detail=(
+                                f"Rate limit exceeded. Allowed: {rate_limit} "
+                                f"requests per minute."
+                            ),
                         )
                     _fallback_counters[key] = (mk, cnt + 1)
                     return True

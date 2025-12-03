@@ -2,7 +2,6 @@ import datetime
 import uuid
 
 from sqlalchemy import (
-    BIGINT,
     DECIMAL,
     JSON,
     Boolean,
@@ -13,10 +12,9 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     String,
-    create_engine,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.types import CHAR, TypeDecorator
 
 

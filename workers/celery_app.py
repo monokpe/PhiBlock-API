@@ -14,7 +14,8 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from celery import Celery, chain, group
+from celery import Celery
+from celery.schedules import crontab
 from kombu import Exchange, Queue
 
 # Configure logging
@@ -77,8 +78,6 @@ app.conf.update(
 )
 
 # Configure Periodic Tasks (Celery Beat)
-from celery.schedules import crontab
-
 app.conf.beat_schedule = {
     "sync-usage-every-hour": {
         "task": "workers.celery_app.sync_usage_to_stripe",
@@ -158,7 +157,8 @@ def check_compliance_async(
         from app.compliance import ComplianceEngine, load_compliance_rules
 
         logger.info(
-            f"[check_compliance_async] Processing {len(text)} chars against {frameworks or 'all'} frameworks"
+            f"[check_compliance_async] Processing {len(text)} chars against "
+            f"{frameworks or 'all'} frameworks"
         )
 
         # Load rules
@@ -281,11 +281,7 @@ def score_risk_async(
     """
     try:
         from app.compliance import RiskScorer
-        from app.compliance.models import (
-            ComplianceAction,
-            ComplianceViolation,
-            Severity,
-        )
+        from app.compliance.models import ComplianceAction, ComplianceViolation, Severity
 
         logger.info(f"[score_risk_async] Scoring {len(entities)} entities")
 
@@ -432,11 +428,7 @@ def analyze_complete_async(
             try:
                 # Import here to avoid module cycles
                 from app import webhook_security
-                from app.webhooks import (
-                    WebhookEventType,
-                    WebhookPayload,
-                    get_webhook_notifier,
-                )
+                from app.webhooks import WebhookEventType, WebhookPayload, get_webhook_notifier
 
                 notifier = get_webhook_notifier()
                 payload = WebhookPayload.build_task_event(
@@ -479,11 +471,7 @@ def analyze_complete_async(
         # Attempt to notify failure to webhook destination if provided
         if "webhook_url" in locals() and webhook_url:
             try:
-                from app.webhooks import (
-                    WebhookEventType,
-                    WebhookPayload,
-                    get_webhook_notifier,
-                )
+                from app.webhooks import WebhookEventType, WebhookPayload, get_webhook_notifier
 
                 notifier = get_webhook_notifier()
                 payload = WebhookPayload.build_task_event(
@@ -559,8 +547,6 @@ def sync_usage_to_stripe():
 
     Aggregates usage from TokenUsage table and reports to Stripe.
     """
-    import time
-
     from sqlalchemy import func
 
     from app.billing import billing_service
@@ -590,7 +576,6 @@ def sync_usage_to_stripe():
                 )
 
                 total_tokens = usage_stats.total_tokens or 0
-                request_count = usage_stats.request_count or 0
 
                 if total_tokens > 0:
                     logger.info(f"Reporting {total_tokens} tokens for tenant {tenant.slug}")
