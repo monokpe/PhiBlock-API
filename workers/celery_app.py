@@ -370,7 +370,7 @@ def analyze_complete_async(
         Dict with complete analysis results
     """
     try:
-        logger.info(f"[analyze_complete_async] Starting complete analysis")
+        logger.info("[analyze_complete_async] Starting complete analysis")
 
         # Step 1: Detect PII
         pii_result = detect_pii_async.delay(text).get(timeout=60)
@@ -570,7 +570,8 @@ def sync_usage_to_stripe():
                         func.count(TokenUsage.id).label("request_count"),
                     )
                     .filter(
-                        TokenUsage.tenant_id == tenant.id, TokenUsage.reported_to_stripe == False
+                        TokenUsage.tenant_id == tenant.id,
+                        TokenUsage.reported_to_stripe.is_(False),
                     )
                     .first()
                 )
@@ -580,13 +581,6 @@ def sync_usage_to_stripe():
                 if total_tokens > 0:
                     logger.info(f"Reporting {total_tokens} tokens for tenant {tenant.slug}")
 
-                    # 3. Report to Stripe
-                    # We need the subscription item ID. For this MVP, we'll assume
-                    # the subscription has one item and we can get it from Stripe API
-                    # OR we store subscription_item_id in DB.
-                    # For now, let's fetch the subscription to get the item ID.
-
-                    # Optimization: Store subscription_item_id in Tenant model in future.
                     import stripe
 
                     if billing_service.api_key:
@@ -602,7 +596,7 @@ def sync_usage_to_stripe():
                                 # 4. Mark records as reported
                                 db.query(TokenUsage).filter(
                                     TokenUsage.tenant_id == tenant.id,
-                                    TokenUsage.reported_to_stripe == False,
+                                    TokenUsage.reported_to_stripe.is_(False),
                                 ).update({TokenUsage.reported_to_stripe: True})
 
                                 db.commit()

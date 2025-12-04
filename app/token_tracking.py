@@ -289,10 +289,7 @@ class TokenUsageLogger:
             days: Number of days to include
 
         Returns:
-            Dictionary with endpoint usage statistics
         """
-        # This would typically query the audit_logs table
-        # For now, return structure that would be populated
         return {
             "api_key_id": api_key_id,
             "period_days": days,

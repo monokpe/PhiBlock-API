@@ -165,7 +165,6 @@ def delete_tenant(
     if not tenant:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
 
-    # For now, hard delete. In production, consider soft delete.
     try:
         db.delete(tenant)
         db.commit()

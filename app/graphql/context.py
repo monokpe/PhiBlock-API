@@ -33,32 +33,12 @@ async def get_context(
     But since our REST API is fully authenticated, let's try to get the user.
     """
 
-    # We can't easily use Depends(get_current_user) here if we want to allow
-    # some unauthenticated queries (like introspection).
-    # But for this implementation, we'll rely on manual extraction or
-    # let the resolvers handle "Authentication required".
-
-    # However, to reuse get_current_user logic, we can try to call it.
-    # But get_current_user depends on api_key_header.
-
-    # Let's try to resolve the user if the header is present.
     current_user = None
     try:
-        # We manually call the dependency logic or use a modified version.
-        # Since get_current_user is a FastAPI dependency, calling it directly is tricky
-        # without the dependency injection system.
-        # But since get_context IS a dependency, we can inject get_current_user!
         pass
     except Exception:
         pass
 
-    # For now, we will pass the db and let resolvers handle logic.
-    # But wait, mutations need current_user.
-
-    # Let's use a trick: we'll define a separate dependency for optional auth
-    # or just use the request state if we had middleware.
-
-    # Let's try to get the user from the header manually for now to avoid 401 on introspection.
     api_key_header = request.headers.get("X-API-Key")
     if api_key_header:
         # We would need to query the DB.
