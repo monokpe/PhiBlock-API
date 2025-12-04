@@ -13,8 +13,8 @@ Guardrails is a real-time API firewall that filters AI prompts before they reach
 
 ## 🎯 Why Guardrails?
 
-**For Healthcare Startups** - Ensure HIPAA compliance for AI-powered tools  
-**For LLM Apps** - Add a security layer to Bubble, Retool, Zapier, and LangChain integrations  
+**For Healthcare Startups** - Ensure HIPAA compliance for AI-powered tools
+**For LLM Apps** - Add a security layer to Bubble, Retool, Zapier, and LangChain integrations
 **For Compliance Teams** - Plug-and-play firewall for GPT-based systems with audit trails
 
 ### Key Problems Solved
@@ -330,6 +330,23 @@ pytest tests/test_detection.py -v
 - ✅ Webhook security validation
 - ✅ GraphQL query authorization
 
+### Code Quality Checks
+
+Run all CI checks locally before pushing:
+
+```bash
+# Run all checks at once
+.\scripts\check_ci.ps1
+
+# Or run individually:
+black --check app/ workers/
+isort --check-only app/ workers/
+flake8 app/ workers/ --max-line-length=100 --extend-ignore=E203,W503,D
+mypy app/ workers/ --ignore-missing-imports
+bandit -r app/ workers/ -ll
+radon cc app/ workers/ -a
+```
+
 ---
 
 ## 🏗️ Architecture
@@ -521,6 +538,14 @@ guardrails/
 - [x] Token usage aggregation and sync
 - [x] Automated billing synchronization
 
+### ✅ Completed (Phase 5.2 - Code Quality Infrastructure)
+
+- [x] Comprehensive CI/CD pipeline (black, isort, flake8, mypy, bandit, radon)
+- [x] Local testing script (`scripts/check_ci.ps1`)
+- [x] Code complexity analysis and thresholds
+- [x] Security scanning with bandit
+- [x] Type checking with mypy (gradual adoption)
+
 ### 📝 Planned
 
 - [ ] Real-time streaming analysis
@@ -541,8 +566,10 @@ Contributions are welcome! Please follow these steps:
 
 ### Development Guidelines
 
-- Write tests for new features
-- Follow PEP 8 style guide
+- Write tests for new features (467 tests currently passing)
+- Run local CI checks before pushing (`scripts/check_ci.ps1`)
+- Follow PEP 8 style guide (enforced by black and flake8)
+- Add type hints for new code (mypy checking enabled)
 - Update documentation for API changes
 - Ensure all tests pass (`pytest`)
 
