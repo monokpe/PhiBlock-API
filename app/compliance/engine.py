@@ -119,7 +119,7 @@ class ComplianceEngine:
                             remediation=rule.remediation,
                             action=rule.action,
                             matched_content=entity.get("value"),
-                            entity_types=[entity.get("type")],
+                            entity_types=[str(entity.get("type", "UNKNOWN"))],
                         )
                     )
 

@@ -197,9 +197,9 @@ class RiskScorer:
 
     def assess_overall_risk(
         self,
-        pii_entities: List[Dict] = None,
+        pii_entities: Optional[List[Dict]] = None,
         injection_score: float = 0.0,
-        compliance_violations: List[ComplianceViolation] = None,
+        compliance_violations: Optional[List[ComplianceViolation]] = None,
     ) -> OverallRiskAssessment:
         """
         Perform comprehensive risk assessment.

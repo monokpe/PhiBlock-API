@@ -166,7 +166,7 @@ class RuleLoader:
         Returns:
             Validation report with counts and any issues
         """
-        report = {
+        report: Dict[str, Any] = {
             "total": len(rules),
             "by_framework": {},
             "by_severity": {},

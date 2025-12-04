@@ -265,7 +265,7 @@ class RedactionPipeline:
             service: RedactionService instance (creates new if None)
         """
         self.service = service or RedactionService()
-        self.operations = []
+        self.operations: List[Tuple] = []
 
     def add_entity_redaction(
         self,

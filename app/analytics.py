@@ -13,7 +13,6 @@ from sqlalchemy.orm import Session
 from . import models
 from .auth import get_current_user
 from .database import get_db
-from .middleware import get_current_tenant
 from .schemas.analytics import (
     AnalyticsStatsResponse,
     TimeSeriesPoint,
@@ -183,7 +182,7 @@ def get_violations_breakdown(
             if isinstance(entities, str):
                 try:
                     entities = json.loads(entities)
-                except:
+                except Exception:
                     entities = []
 
             if isinstance(entities, list):
