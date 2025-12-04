@@ -5,7 +5,6 @@ Handles parsing YAML rule definitions and converting them to ComplianceRule obje
 Supports validation and rule merging from multiple sources.
 """
 
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 

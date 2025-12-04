@@ -12,7 +12,7 @@ Risk levels: LOW (0-30), MEDIUM (30-60), HIGH (60-85), CRITICAL (85-100)
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from app.compliance.models import ComplianceViolation, Severity
 

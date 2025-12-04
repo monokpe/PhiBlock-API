@@ -4,10 +4,10 @@ Analytics API endpoints.
 
 import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import desc, func, text
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from . import models

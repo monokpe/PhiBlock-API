@@ -26,7 +26,6 @@ from workers.celery_app import (
     check_compliance_async,
     detect_pii_async,
     get_task_result,
-    get_task_status,
     redact_async,
 )
 

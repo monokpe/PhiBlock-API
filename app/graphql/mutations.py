@@ -13,7 +13,7 @@ from workers.detection import get_injection_score
 
 from .. import cache_service, logging, models
 from ..detection import detect_pii
-from .types import AnalysisResultType, DetectionResultType, EntityPositionType, TenantType
+from .types import AnalysisResultType, DetectionResultType, TenantType
 
 
 @strawberry.input

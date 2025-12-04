@@ -2,13 +2,11 @@
 GraphQL context and dependency injection.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
-from .. import models
-from ..auth import get_current_user
 from ..database import get_db
 from ..middleware import get_current_tenant
 
