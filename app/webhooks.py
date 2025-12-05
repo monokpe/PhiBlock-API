@@ -48,8 +48,6 @@ class WebhookStatus(str, Enum):
 class WebhookPayload:
     """
     Webhook payload builder.
-
-    Constructs standardized JSON payloads for webhook events.
     """
 
     @staticmethod
@@ -64,18 +62,6 @@ class WebhookPayload:
     ) -> Dict[str, Any]:
         """
         Build task event webhook payload.
-
-        Args:
-            event_type: Type of event
-            task_id: Celery task ID
-            task_name: Task name (e.g., 'detect_pii_async')
-            status: Current task status
-            result: Task result data (optional)
-            error: Error message if failed (optional)
-            metadata: Additional metadata (optional)
-
-        Returns:
-            Webhook payload dictionary
         """
         payload = {
             "event_type": event_type.value,
@@ -124,20 +110,12 @@ class WebhookPayload:
 class WebhookNotifier:
     """
     Sends HTTP webhook notifications for task events.
-
-    Provides:
-    - HTTP POST delivery to webhook URLs
-    - Retry logic with exponential backoff
-    - Timeout handling
-    - Error recovery
-    - Audit logging
     """
 
-    # Configuration
-    DEFAULT_TIMEOUT = 5.0  # seconds
+    DEFAULT_TIMEOUT = 5.0
     MAX_RETRIES = 3
-    RETRY_DELAY = 1  # seconds
-    RETRY_BACKOFF = 2  # exponential multiplier
+    RETRY_DELAY = 1
+    RETRY_BACKOFF = 2
     DEFAULT_HEADERS = {
         "Content-Type": "application/json",
         "User-Agent": "Guardrails-Webhook/1.0",
@@ -151,11 +129,6 @@ class WebhookNotifier:
     ):
         """
         Initialize WebhookNotifier.
-
-        Args:
-            timeout: HTTP request timeout in seconds
-            max_retries: Maximum number of retry attempts
-            retry_delay: Initial retry delay in seconds
         """
         self.timeout = timeout
         self.max_retries = max_retries
@@ -197,28 +170,17 @@ class WebhookNotifier:
     ) -> Tuple[bool, Optional[str], int]:
         """
         Send webhook notification with retry logic.
-
-        Args:
-            webhook_url: Target webhook URL
-            payload: Webhook payload data
-            event_type: Type of event being notified
-
-        Returns:
-            Tuple of (success, error_message, attempt_count)
         """
-        # Validate URL
         is_valid, error = self.validate_webhook_url(webhook_url)
         if not is_valid:
             logger.error(f"Invalid webhook URL: {error}")
             return (False, error, 0)
 
-        # Validate payload
         is_valid, error = WebhookPayload.validate_payload(payload)
         if not is_valid:
             logger.error(f"Invalid webhook payload: {error}")
             return (False, error, 0)
 
-        # Allowlist check
         try:
             if not webhook_security.is_allowed_webhook(webhook_url):
                 err = "Webhook destination not allowed by server allowlist"
@@ -231,7 +193,6 @@ class WebhookNotifier:
             self._log_delivery(webhook_url, event_type, False, err, 0)
             return (False, err, 0)
 
-        # Rate limit check (fail-open)
         try:
             if webhook_security.is_rate_limited(webhook_url):
                 err = "Rate limit exceeded for webhook destination"
@@ -241,7 +202,6 @@ class WebhookNotifier:
         except Exception:
             logger.exception("Rate limit check encountered an error; failing open")
 
-        # Attempt delivery with retries
         for attempt in range(1, self.max_retries + 1):
             try:
                 response = self._post_webhook(webhook_url, payload, extra_headers=extra_headers)
@@ -254,7 +214,6 @@ class WebhookNotifier:
                     self._log_delivery(webhook_url, event_type, True, None, attempt)
                     return (True, None, attempt)
 
-                # Non-2xx response - might retry
                 if attempt < self.max_retries and response.status_code >= 500:
                     logger.warning(
                         f"Webhook server error {response.status_code}, "
@@ -263,7 +222,6 @@ class WebhookNotifier:
                     self._wait_with_backoff(attempt)
                     continue
 
-                # Non-retryable error
                 error_msg = f"HTTP {response.status_code}: {response.text[:100]}"
                 logger.error(f"Webhook failed: {error_msg}")
                 self._log_delivery(webhook_url, event_type, False, error_msg, attempt)
@@ -328,9 +286,6 @@ class WebhookNotifier:
     def _wait_with_backoff(self, attempt: int) -> None:
         """
         Wait before retry with exponential backoff.
-
-        Args:
-            attempt: Current attempt number
         """
         import time
 

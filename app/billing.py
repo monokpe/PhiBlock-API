@@ -58,7 +58,6 @@ class BillingService:
             return False
 
         try:
-            # Idempotency key to prevent duplicate reports
             idempotency_key = f"usage_{subscription_item_id}_{timestamp}" if timestamp else None
 
             stripe.SubscriptionItem.create_usage_record(

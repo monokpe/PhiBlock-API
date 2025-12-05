@@ -25,7 +25,6 @@ async def log_request(
     latency_ms = int((time.time() - start_time) * 1000)
     prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()
 
-    # Prepare data from analysis_result, with defaults for incomplete data
     analysis_result = analysis_result or {}
     detections = analysis_result.get("detections", {})
     entities_detected = detections.get("entities")

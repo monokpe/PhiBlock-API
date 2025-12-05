@@ -7,7 +7,7 @@ Tests cover:
 - Webhook parameter combinations with other options
 """
 
-import json
+
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -455,9 +455,7 @@ class TestWebhookIntegrationWithAsyncEndpoints:
             )
 
             assert response.status_code == 200
-
-            # The notification should be scheduled as a background task
-            # In real usage, this would be called via FastAPI background tasks
+            mock_send.assert_called_once()
 
     def test_multiple_async_requests_with_different_webhooks(self):
         """Multiple requests with different webhooks should each track separately."""
@@ -646,7 +644,7 @@ class TestWebhookIntegrationWithAsyncEndpoints:
         assert set(data_with.keys()) == set(data_without.keys())
 
         # Status should be same type in both
-        assert type(data_with["status"]) == type(data_without["status"])
+        assert type(data_with["status"]) is type(data_without["status"])
 
     def test_analyze_async_frameworks_parameter_with_webhook(self):
         """Frameworks parameter should work together with webhook_url."""

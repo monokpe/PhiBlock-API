@@ -30,23 +30,18 @@ class SecretsManager:
         self.client = None
         if self.use_aws:
             try:
-                import boto3  # imported lazily so boto3 is optional
+                import boto3
 
                 kwargs = {}
                 if self.region:
                     kwargs["region_name"] = self.region
                 self.client = boto3.client("secretsmanager", **kwargs)
             except Exception:
-                # If boto3 isn't installed or client fails to initialize, fall back to env
                 self.client = None
 
     @lru_cache(maxsize=128)
     def _fetch_secret_raw(self, name: str) -> Optional[Any]:
-        """Fetch raw secret value from AWS Secrets Manager or env var.
-
-        Returns parsed JSON when possible, otherwise a string.
-        """
-        # Try AWS Secrets Manager first
+        """Fetch raw secret value from AWS Secrets Manager or env var."""
         if self.client:
             try:
                 resp = self.client.get_secret_value(SecretId=name)
@@ -57,21 +52,16 @@ class SecretsManager:
                     try:
                         secret = secret.decode()
                     except Exception:
-                        # return raw binary if decoding fails
                         return secret
                 try:
                     return json.loads(secret)
                 except Exception:
                     return secret
             except Exception:
-                # any AWS error falls back to env variables
                 pass
 
-        # Fallback to environment variables
         value = os.getenv(name)
         if value is None:
-            # Support a common pattern: allow JSON stored under an upper-case key
-            # or a namespaced key mapping like 'MY_SERVICE__CREDS'
             return None
         try:
             return json.loads(value)

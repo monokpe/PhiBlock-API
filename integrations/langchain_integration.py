@@ -13,18 +13,9 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 import os
 
-try:
-    from langchain_core.callbacks import BaseCallbackHandler
-    from langchain_core.runnables import Runnable, RunnableConfig
-    from langchain_core.messages import BaseMessage
-except ImportError:
-    # Define dummy classes if langchain is not installed
-    # This allows the code to be imported without crashing, 
-    # but actual usage will require langchain
-    class BaseCallbackHandler: pass
-    class Runnable: pass
-    class RunnableConfig: pass
-    class BaseMessage: pass
+from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.runnables import Runnable, RunnableConfig
+from langchain_core.messages import BaseMessage
 
 
 class GuardrailsCallbackHandler(BaseCallbackHandler):
@@ -51,10 +42,14 @@ class GuardrailsCallbackHandler(BaseCallbackHandler):
         for prompt in prompts:
             self._check_compliance(prompt, "input")
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+# ... (rest of the file)
+
     def on_llm_end(self, response: Any, **kwargs: Any) -> None:
         """Run when LLM ends running."""
-        # Note: Parsing the response object depends on the LLM used.
-        # This is a simplified implementation.
         if hasattr(response, "generations"):
             for generation_list in response.generations:
                 for generation in generation_list:
@@ -79,7 +74,6 @@ class GuardrailsCallbackHandler(BaseCallbackHandler):
             resp.raise_for_status()
             result = resp.json()
             
-            # Check for PII or Injection
             detections = result.get("detections", {})
             if detections.get("pii_found") or detections.get("injection_detected"):
                 msg = f"Guardrails Violation detected in {source}: "
@@ -94,12 +88,12 @@ class GuardrailsCallbackHandler(BaseCallbackHandler):
                 if self.raise_on_violation:
                     raise ValueError(full_msg)
                 else:
-                    print(f"WARNING: {full_msg}")
+                    logger.warning(full_msg)
                     
         except Exception as e:
             if self.raise_on_violation:
                 raise e
-            print(f"Error checking compliance: {e}")
+            logger.error(f"Error checking compliance: {e}")
 
 
 class GuardrailsRunnable(Runnable):
@@ -121,19 +115,16 @@ class GuardrailsRunnable(Runnable):
         self.mode = mode
 
     def invoke(self, input: Union[str, BaseMessage, Dict], config: Optional[RunnableConfig] = None) -> Any:
-        # Extract text from input
         text = ""
         if isinstance(input, str):
             text = input
-        elif hasattr(input, "content"): # BaseMessage
+        elif hasattr(input, "content"):
             text = input.content
         elif isinstance(input, dict):
-            # Try common keys
             text = input.get("text") or input.get("content") or input.get("input") or str(input)
         else:
             text = str(input)
             
-        # Call API
         headers = {}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
@@ -146,15 +137,10 @@ class GuardrailsRunnable(Runnable):
         resp.raise_for_status()
         result = resp.json()
         
-        # If sanitized version is available and we want to use it
         if result.get("sanitized_prompt") and result.get("sanitized_prompt") != text:
-            # Return sanitized text if input was string
             if isinstance(input, str):
                 return result["sanitized_prompt"]
-            # If input was message, return new message with sanitized content
             elif hasattr(input, "content"):
-                # Create a copy with new content (simplified)
-                # In real usage, we'd want to preserve the message type
                 input.content = result["sanitized_prompt"]
                 return input
                 

@@ -4,13 +4,8 @@ Comprehensive tests for prompt injection detection.
 Tests cover various injection techniques, edge cases, and boundary conditions.
 """
 
-import pytest
 
 from workers.detection import get_injection_score
-
-# ============================================================================
-# Basic Injection Tests
-# ============================================================================
 
 
 def test_get_injection_score_with_injection():
@@ -25,11 +20,6 @@ def test_get_injection_score_without_injection():
     prompt = "What is the capital of France?"
     score = get_injection_score(prompt)
     assert score < 0.2
-
-
-# ============================================================================
-# Injection Technique Tests
-# ============================================================================
 
 
 def test_system_override_injection():
@@ -83,11 +73,6 @@ def test_instruction_injection():
         assert score > 0.3, f"Failed to detect injection in: {prompt}"
 
 
-# ============================================================================
-# Legitimate Prompts (Should NOT Trigger)
-# ============================================================================
-
-
 def test_legitimate_questions():
     """Test that legitimate questions don't trigger false positives."""
     prompts = [
@@ -113,11 +98,6 @@ def test_legitimate_instructions():
     for prompt in prompts:
         score = get_injection_score(prompt)
         assert score < 0.3, f"False positive for: {prompt}"
-
-
-# ============================================================================
-# Edge Cases
-# ============================================================================
 
 
 def test_empty_prompt():
@@ -175,11 +155,6 @@ def test_special_characters():
         assert 0 <= score <= 1  # Should handle gracefully
 
 
-# ============================================================================
-# Obfuscation Tests
-# ============================================================================
-
-
 def test_case_variation():
     """Test detection with case variations."""
     prompts = [
@@ -202,11 +177,6 @@ def test_spacing_variation():
     for prompt in prompts:
         score = get_injection_score(prompt)
         assert score > 0.5, f"Failed to detect: {prompt}"
-
-
-# ============================================================================
-# Boundary Tests
-# ============================================================================
 
 
 def test_score_range():

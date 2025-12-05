@@ -37,11 +37,6 @@ class QueryOptimizer:
     ) -> List[models.AuditLog]:
         """
         Fetch audit logs with eager loading to prevent N+1 queries.
-
-        Uses:
-        - joinedload for api_key relationship
-        - date range filtering for performance
-        - Limit and offset for pagination
         """
         query = (
             db.query(models.AuditLog)
@@ -52,7 +47,6 @@ class QueryOptimizer:
             )
         )
 
-        # Optional date range filtering
         if start_date:
             query = query.filter(models.AuditLog.timestamp >= start_date)
         if end_date:
@@ -67,7 +61,6 @@ class QueryOptimizer:
     ) -> List[models.Customer]:
         """
         Fetch customers and their API keys with eager loading.
-        Prevents N+1 queries when accessing customer.api_keys.
         """
         return (
             db.query(models.Customer)
@@ -104,7 +97,6 @@ class QueryOptimizer:
     ) -> Dict[str, Any]:
         """
         Get aggregated token usage statistics using SQL aggregation.
-        More efficient than fetching all rows and aggregating in Python.
         """
         from sqlalchemy import func
 
@@ -201,23 +193,17 @@ class IndexingStrategy:
     Documentation and recommendations for database indexing.
     """
 
-    # Recommended indexes for performance
     RECOMMENDED_INDEXES = [
-        # Tenant isolation and filtering
         "CREATE INDEX idx_customer_tenant_id ON customers(tenant_id);",
         "CREATE INDEX idx_api_key_tenant_id ON api_keys(tenant_id);",
         "CREATE INDEX idx_audit_log_tenant_id ON audit_logs(tenant_id);",
         "CREATE INDEX idx_token_usage_tenant_id ON token_usage(tenant_id);",
-        # Lookup by ID
         "CREATE INDEX idx_audit_log_api_key_id ON audit_logs(api_key_id);",
         "CREATE INDEX idx_token_usage_api_key_id ON token_usage(api_key_id);",
-        # Time-series queries
         "CREATE INDEX idx_audit_log_timestamp ON audit_logs(timestamp DESC);",
         "CREATE INDEX idx_token_usage_timestamp ON token_usage(timestamp DESC);",
-        # Composite indexes for common queries
         "CREATE INDEX idx_audit_log_tenant_timestamp ON audit_logs(tenant_id, timestamp DESC);",
         "CREATE INDEX idx_token_usage_tenant_timestamp ON token_usage(tenant_id, timestamp DESC);",
-        # Unique constraints for lookups
         "CREATE UNIQUE INDEX idx_api_key_hash ON api_keys(key_hash);",
         "CREATE UNIQUE INDEX idx_tenant_slug ON tenants(slug);",
     ]
@@ -231,19 +217,19 @@ class IndexingStrategy:
     def check_missing_indexes(db: Session) -> List[str]:
         """
         Check which recommended indexes are missing.
-        Run this periodically to ensure optimal performance.
         """
         missing = []
         for index_sql in IndexingStrategy.RECOMMENDED_INDEXES:
-            index_name = index_sql.split(" ")[2]  # Extract index name
+            index_name = index_sql.split(" ")[2]
             try:
                 result = db.execute(
                     text(
-                        f"""
+                        """
                     SELECT 1 FROM information_schema.statistics
-                    WHERE table_schema = 'public' AND index_name = '{index_name}'
+                    WHERE table_schema = 'public' AND index_name = :index_name
                     """
-                    )
+                    ),
+                    {"index_name": index_name},
                 ).first()
                 if not result:
                     missing.append(index_sql)
@@ -257,12 +243,11 @@ class IndexingStrategy:
 def get_slow_queries_report(db: Session, threshold_seconds: float = 1.0) -> Dict[str, Any]:
     """
     Get a report of slow queries from pg_stat_statements (PostgreSQL).
-    Requires pg_stat_statements extension enabled.
     """
     try:
         result = db.execute(
             text(
-                f"""
+                """
             SELECT
                 query,
                 calls,
@@ -270,11 +255,12 @@ def get_slow_queries_report(db: Session, threshold_seconds: float = 1.0) -> Dict
                 mean_time,
                 max_time
             FROM pg_stat_statements
-            WHERE mean_time > {threshold_seconds * 1000}
+            WHERE mean_time > :mean_time
             ORDER BY mean_time DESC
             LIMIT 20
             """
-            )
+            ),
+            {"mean_time": threshold_seconds * 1000},
         ).fetchall()
 
         return {

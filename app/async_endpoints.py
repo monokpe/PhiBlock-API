@@ -37,11 +37,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["async"])
 
 
-# ============================================================================
-# HELPER FUNCTIONS
-# ============================================================================
-
-
 def _send_webhook_notification(
     webhook_url: Optional[str],
     task_id: str,
@@ -107,7 +102,8 @@ def _send_webhook_notification(
         if success:
             logger.info(
                 f"[_send_webhook_notification] Webhook sent successfully to {webhook_url} "
-                f"for task {task_id} (attempt {attempt})"
+                f"(task: {task_id}, "
+                f"attempt: {attempt})"
             )
         else:
             logger.warning(
@@ -117,11 +113,6 @@ def _send_webhook_notification(
 
     except Exception as e:
         logger.error(f"[_send_webhook_notification] Error sending webhook: {e}")
-
-
-# ============================================================================
-# REQUEST/RESPONSE MODELS
-# ============================================================================
 
 
 class AsyncAnalysisRequest(BaseModel):
@@ -219,11 +210,6 @@ class CompleteAnalysisResponse(BaseModel):
     pii: Dict[str, Any]
     compliance: Dict[str, Any]
     risk: Dict[str, Any]
-
-
-# ============================================================================
-# ENDPOINTS: ASYNC ANALYSIS
-# ============================================================================
 
 
 @router.post(
@@ -369,11 +355,6 @@ async def redact_task(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ============================================================================
-# ENDPOINTS: TASK STATUS & RESULTS
-# ============================================================================
-
-
 @router.get(
     "/tasks/{task_id}",
     response_model=TaskStatusResponse,
@@ -477,11 +458,6 @@ async def cancel_task(task_id: str) -> Dict[str, str]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ============================================================================
-# ENDPOINTS: TASK MONITORING
-# ============================================================================
-
-
 @router.get(
     "/tasks/stats/pending",
     summary="Get pending tasks",
@@ -492,7 +468,6 @@ async def get_pending_tasks() -> Dict[str, Any]:
     try:
         from workers.celery_app import app
 
-        # Get active tasks
         active = app.control.inspect().active()
 
         pending_count = 0

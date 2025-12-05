@@ -29,29 +29,22 @@ logger = logging.getLogger(__name__)
 
 class PIIEncryptor:
     def __init__(self, key: Optional[str] = None):
-        # prefer secrets manager value, fall back to provided key then env
         if key is None:
             key = secrets.get("PII_ENCRYPTION_KEY") or os.getenv("PII_ENCRYPTION_KEY")
 
         if key:
-            # If user provided a raw passphrase, convert to a Fernet key safely
-            # Expecting a 32 url-safe base64-encoded bytes key, but accept raw
-            # bytes by deriving via base64 if needed.
-            if isinstance(key, str) and len(key) == 44 and key.endswith("="):
-                self.fernet = Fernet(key.encode("utf-8"))
-                self.enabled = True
-            else:
-                try:
-                    # try to base64-encode a raw passphrase
+            try:
+                if isinstance(key, str) and len(key) == 44 and key.endswith("="):
+                    self.fernet = Fernet(key.encode("utf-8"))
+                else:
                     derived = base64.urlsafe_b64encode(key.encode("utf-8"))
-                    # ensure correct length
                     derived = derived[:44]
                     self.fernet = Fernet(derived)
-                    self.enabled = True
-                except Exception:
-                    logger.exception("Failed to initialize Fernet from provided key")
-                    self.fernet = None
-                    self.enabled = False
+                self.enabled = True
+            except Exception:
+                logger.exception("Failed to initialize Fernet from provided key")
+                self.fernet = None
+                self.enabled = False
         else:
             self.fernet = None
             self.enabled = False
@@ -92,28 +85,22 @@ def get_pii_encryptor() -> PIIEncryptor:
 
 
 class PIIEncryptedType(TypeDecorator):
-    """SQLAlchemy TypeDecorator that transparently encrypts/decrypts TEXT.
-
-    Store as TEXT containing the Fernet token (utf-8 string) when enabled.
-    """
+    """SQLAlchemy TypeDecorator that transparently encrypts/decrypts TEXT."""
 
     impl = TEXT
 
     cache_ok = True
 
     def process_bind_param(self, value, dialect):
-        # called before writing to DB
         if value is None:
             return None
         enc = get_pii_encryptor()
         if not enc.enabled:
             return value
         out = enc.encrypt(value)
-        # If encryption failed, return None to avoid storing plaintext silently
         return out if out is not None else None
 
     def process_result_value(self, value, dialect):
-        # called when reading from DB
         if value is None:
             return None
         enc = get_pii_encryptor()

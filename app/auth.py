@@ -24,23 +24,18 @@ def get_password_hash(password):
 
 def create_api_key(db: Session, customer_id: int) -> tuple[str, models.APIKey]:
     """Generate a new API key, hash it, and store it in the database."""
-    # Use 16 bytes (32 hex chars) for the key - shorter than 72 byte bcrypt limit
     plain_key = secrets.token_hex(16)
     hashed_key = get_password_hash(plain_key)
 
-    # Fetch customer to get tenant_id
-    # Use tenant-aware query to ensure customer belongs to current tenant
     from .middleware import get_current_tenant
     from .tenant_queries import get_tenant_item
 
     tenant_id = get_current_tenant()
     if tenant_id:
-        # If tenant context exists, verify customer belongs to this tenant
         customer = get_tenant_item(db, models.Customer, customer_id)
         if not customer:
             raise ValueError(f"Customer {customer_id} not found or access denied")
     else:
-        # Fallback for non-tenant contexts (e.g., initial setup, tests)
         customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
         if not customer:
             raise ValueError(f"Customer {customer_id} not found")
@@ -61,23 +56,8 @@ def create_api_key(db: Session, customer_id: int) -> tuple[str, models.APIKey]:
 def get_api_key_from_db(db: Session, key: str) -> models.APIKey | None:
     """
     Retrieves an API key from the database by matching against stored hashes.
-
-    This function uses bcrypt password verification for secure key matching.
-    While it must iterate through keys (bcrypt hashes are one-way), the
-    database index on key_hash ensures efficient retrieval.
-
-    For even better performance in production, consider:
-    1. Using a separate lookup table with pre-computed prefixes
-    2. Implementing caching with Redis
-    3. Rate-limiting key lookups to prevent brute force attacks
     """
-    # Query all API keys (with index on key_hash for faster retrieval)
-    # In production, consider implementing a cache or alternative lookup method
-    api_keys = (
-        db.query(models.APIKey)
-        .filter(models.APIKey.revoked_at.is_(None))  # Only return non-revoked keys
-        .all()
-    )
+    api_keys = db.query(models.APIKey).filter(models.APIKey.revoked_at.is_(None)).all()
 
     for api_key_obj in api_keys:
         if verify_password(key, api_key_obj.key_hash):

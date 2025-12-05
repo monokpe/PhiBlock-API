@@ -4,12 +4,10 @@ Tests for Performance Optimization (Phase 4.1)
 Tests query optimization, connection pooling, and performance monitoring.
 """
 
-import time
-from datetime import datetime, timedelta
 
 import pytest
 
-from app import models
+
 from app.database import SessionLocal, get_engine_info
 from app.query_optimization import IndexingStrategy, QueryOptimizer
 

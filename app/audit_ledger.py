@@ -76,12 +76,10 @@ class AuditLedger:
         self.path = path
         self.key = _get_ledger_key()
 
-        # Ensure file exists
-        (
-            os.makedirs(os.path.dirname(self.path), exist_ok=True)
-            if os.path.dirname(self.path)
-            else None
-        )
+        dirname = os.path.dirname(self.path)
+        if dirname:
+            os.makedirs(dirname, exist_ok=True)
+
         if not os.path.exists(self.path):
             open(self.path, "a", encoding="utf-8").close()
 
