@@ -1,7 +1,7 @@
+import logging  # Standard library logging
 import os
 import time
 import uuid
-import logging  # Standard library logging
 
 import sentry_sdk
 from fastapi import Depends, FastAPI, Request
@@ -9,8 +9,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from strawberry.fastapi import GraphQLRouter
 
-from . import auth, models
+from workers.detection import get_injection_score
+
+from . import auth
 from . import logging as local_logging  # Renaming local logging to avoid conflict
+from . import models
 from .analytics import router as analytics_router
 from .async_endpoints import router as async_router
 from .cache_service import cache_result, get_cached_result
@@ -23,7 +26,6 @@ from .performance_monitoring import router as performance_router
 from .rate_limiting import RateLimiter
 from .security import register_security
 from .tenant_api import router as tenant_router
-from workers.detection import get_injection_score
 
 logger = logging.getLogger(__name__)  # Use standard logging for general purpose logging
 

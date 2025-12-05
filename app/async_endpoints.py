@@ -135,7 +135,10 @@ class AsyncAnalysisRequest(BaseModel):
     )
     sign_payload: Optional[bool] = Field(
         default=False,
-        description="If true, request that the server sign webhook payloads with server-wide HMAC secret (if configured)",
+        description=(
+            "If true, request that the server sign webhook payloads "
+            "with server-wide HMAC secret (if configured)"
+        ),
     )
 
 

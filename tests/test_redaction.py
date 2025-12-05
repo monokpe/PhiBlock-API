@@ -376,8 +376,8 @@ class TestRedactionPipeline:
         service = RedactionService()
         pipeline = RedactionPipeline(service)
 
-        text = "Test content"
-        entities = []
+        _text = "Test content"  # noqa: F841
+        _entities = []  # noqa: F841
 
         # Add operations
         pipeline.add_entity_redaction(RedactionStrategy.FULL_MASK)

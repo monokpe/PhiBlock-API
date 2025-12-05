@@ -4,7 +4,6 @@ Tests for Analytics API.
 
 import datetime
 
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

@@ -11,18 +11,8 @@ Tests for:
 
 import pytest
 
-from app.compliance.models import (
-    ComplianceAction,
-    ComplianceViolation,
-    Severity,
-)
-from app.compliance.risk_scoring import (
-    OverallRiskAssessment,
-    RiskLevel,
-    RiskScore,
-    RiskScorer,
-    get_risk_scorer,
-)
+from app.compliance.models import ComplianceAction, ComplianceViolation, Severity
+from app.compliance.risk_scoring import RiskLevel, RiskScorer, get_risk_scorer
 
 
 class TestRiskScoring:

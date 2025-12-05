@@ -137,7 +137,10 @@ class RiskScorer:
             component="INJECTION",
             value=score,
             level=level,
-            details=f"Prompt injection risk (confidence: {injection_confidence:.2%}, length: {prompt_length})",
+            details=(
+                f"Prompt injection risk "
+                f"(confidence: {injection_confidence:.2%}, length: {prompt_length})"
+            ),
             remediation="Review and sanitize prompt; implement instruction following guardrails",
         )
 

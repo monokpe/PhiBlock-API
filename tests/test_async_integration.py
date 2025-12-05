@@ -10,13 +10,10 @@ Tests cover:
 - Response formats
 """
 
-from datetime import datetime
-from typing import Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-
 
 from app.main import app
 

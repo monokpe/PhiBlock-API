@@ -11,18 +11,11 @@ Tests cover:
 - Multiple models
 """
 
-from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
 
-from app.token_tracking import (
-    RiskLevel,
-    TokenModel,
-    TokenTracker,
-    TokenUsageLogger,
-    get_token_tracker,
-)
+from app.token_tracking import RiskLevel, TokenTracker, TokenUsageLogger, get_token_tracker
 
 
 class TestTokenCounter:

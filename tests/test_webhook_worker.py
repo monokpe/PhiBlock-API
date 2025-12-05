@@ -1,6 +1,5 @@
 import types
-from unittest.mock import Mock, patch
-
+from unittest.mock import Mock
 
 from workers.celery_app import analyze_complete_async
 

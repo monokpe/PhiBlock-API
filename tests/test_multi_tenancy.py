@@ -5,7 +5,6 @@ These tests verify that tenant data isolation is properly enforced,
 preventing cross-tenant data access.
 """
 
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

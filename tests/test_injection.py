@@ -4,7 +4,6 @@ Comprehensive tests for prompt injection detection.
 Tests cover various injection techniques, edge cases, and boundary conditions.
 """
 
-
 from workers.detection import get_injection_score
 
 

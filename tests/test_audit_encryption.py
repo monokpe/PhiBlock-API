@@ -1,6 +1,5 @@
 """Tests for audit encryption module."""
 
-
 import os
 import sys
 from unittest.mock import patch

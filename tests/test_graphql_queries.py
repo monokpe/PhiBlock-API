@@ -2,7 +2,6 @@
 Tests for GraphQL queries.
 """
 
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

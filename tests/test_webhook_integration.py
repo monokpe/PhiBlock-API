@@ -7,8 +7,7 @@ Tests cover:
 - Webhook parameter combinations with other options
 """
 
-
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient

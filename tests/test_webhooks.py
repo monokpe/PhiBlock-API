@@ -12,17 +12,12 @@ Tests cover:
 """
 
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import httpx
 import pytest
 
-from app.webhooks import (
-    WebhookEventType,
-    WebhookNotifier,
-    WebhookPayload,
-    get_webhook_notifier,
-)
+from app.webhooks import WebhookEventType, WebhookNotifier, WebhookPayload, get_webhook_notifier
 
 
 class TestWebhookURLValidation:
