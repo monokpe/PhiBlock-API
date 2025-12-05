@@ -1,11 +1,9 @@
 """Tests for audit encryption module."""
 
-import json
+
 import os
 import sys
 from unittest.mock import patch
-
-import pytest
 
 # Reload the audit_encryption module to ensure cryptography import is fresh
 if "app.audit_encryption" in sys.modules:

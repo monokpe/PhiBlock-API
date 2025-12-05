@@ -5,7 +5,6 @@ These tests verify that tenant data isolation is properly enforced,
 preventing cross-tenant data access.
 """
 
-import uuid
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,7 +14,7 @@ from sqlalchemy.orm import sessionmaker
 from app.auth import create_api_key
 from app.database import get_db
 from app.main import app
-from app.models import APIKey, Base, Customer, Tenant
+from app.models import Base, Customer, Tenant
 
 # Use an in-memory SQLite database for testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test_multi_tenancy.db"

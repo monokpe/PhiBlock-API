@@ -27,29 +27,23 @@ def create_tenant(
     - **slug**: URL-safe identifier (auto-generated from name if not provided)
     - **plan**: Subscription plan (basic, pro, enterprise)
     """
-    # Generate slug if not provided
     slug = tenant_data.generate_slug()
 
-    # Check if slug already exists
     existing = db.query(Tenant).filter(Tenant.slug == slug).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail=f"Tenant with slug '{slug}' already exists"
         )
 
-    # Create tenant
     tenant = Tenant(
         name=tenant_data.name,
         slug=slug,
         plan=tenant_data.plan or "basic",
     )
 
-    # Create Stripe Customer
     from .billing import billing_service
 
-    stripe_id = billing_service.create_customer(
-        email=f"admin@{slug}.com", name=tenant_data.name  # Placeholder email
-    )
+    stripe_id = billing_service.create_customer(email=f"admin@{slug}.com", name=tenant_data.name)
     if stripe_id:
         tenant.stripe_customer_id = stripe_id
 
@@ -77,10 +71,8 @@ def list_tenants(
     - **page**: Page number (default: 1)
     - **page_size**: Items per page (default: 10, max: 100)
     """
-    # Get total count
     total = db.query(Tenant).count()
 
-    # Get paginated results
     offset = (page - 1) * page_size
     tenants = (
         db.query(Tenant).order_by(Tenant.created_at.desc()).offset(offset).limit(page_size).all()
@@ -130,7 +122,6 @@ def update_tenant(
     if not tenant:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
 
-    # Update fields if provided
     if tenant_data.name is not None:
         tenant.name = tenant_data.name
 

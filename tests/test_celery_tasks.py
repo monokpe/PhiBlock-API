@@ -9,12 +9,10 @@ Tests cover:
 - Error handling
 """
 
-from typing import Any, Dict, List
-from unittest.mock import MagicMock, Mock, patch
+from typing import List
+from unittest.mock import MagicMock, patch
 
-import pytest
-from celery import Celery
-from celery.result import AsyncResult
+import pytest  # Added this line
 
 # Import the Celery app and tasks
 from workers.celery_app import (
@@ -114,7 +112,6 @@ class TestDetectPIITask:
     def test_detect_pii_task_returns_expected_format(self):
         """Test detect_pii_async returns proper response format"""
         # Expected format from task
-        expected_keys = {"status", "entities", "entity_count", "text_length"}
 
         # The task code shows it returns this structure
         assert True  # Verified by code inspection
@@ -135,13 +132,7 @@ class TestComplianceTask:
 
     def test_compliance_task_returns_expected_format(self):
         """Test compliance task returns proper format"""
-        expected_keys = {
-            "status",
-            "compliant",
-            "violation_count",
-            "frameworks_checked",
-            "violations",
-        }
+
         # Verified by code inspection
         assert True
 
@@ -177,14 +168,7 @@ class TestRedactionTask:
 
     def test_redaction_task_returns_expected_format(self):
         """Test redaction task returns proper format"""
-        expected_keys = {
-            "status",
-            "redacted_text",
-            "redaction_count",
-            "strategy",
-            "original_length",
-            "redacted_length",
-        }
+
         # Verified by code inspection
         assert True
 
@@ -209,18 +193,7 @@ class TestRiskScoringTask:
 
     def test_risk_scoring_task_returns_expected_format(self):
         """Test risk scoring task returns proper format"""
-        expected_keys = {
-            "status",
-            "overall_score",
-            "overall_level",
-            "pii_score",
-            "injection_score",
-            "compliance_score",
-            "critical_count",
-            "total_entities",
-            "top_risks",
-            "recommendations",
-        }
+
         # Verified by code inspection
         assert True
 
@@ -250,7 +223,7 @@ class TestCompositeAnalysisTask:
 
     def test_complete_analysis_returns_combined_result(self):
         """Test complete analysis returns combined results"""
-        expected_keys = {"status", "pii", "compliance", "risk"}
+
         # Result structure verified by code inspection
         assert True
 
@@ -278,7 +251,7 @@ class TestTaskUtilityFunctions:
 
     def test_get_task_status_returns_state_string(self):
         """Test get_task_status returns valid state"""
-        valid_states = {"PENDING", "STARTED", "SUCCESS", "FAILURE"}
+
         # Function returns AsyncResult.state which is one of these
         assert True
 
@@ -318,23 +291,13 @@ class TestTaskSerialization:
 
     def test_pii_entities_serializable(self):
         """Test PII entity dicts are JSON serializable"""
-        entity = {
-            "type": "PERSON",
-            "value": "John",
-            "confidence": 0.95,
-            "position": (0, 4),
-        }
+
         # All primitive types - JSON serializable
         assert True
 
     def test_compliance_violations_serializable(self):
         """Test compliance violations are JSON serializable"""
-        violation = {
-            "rule_id": "HIPAA_001",
-            "framework": "HIPAA",
-            "severity": "HIGH",
-            "message": "PHI detected",
-        }
+
         # All primitive types - JSON serializable
         assert True
 

@@ -19,12 +19,7 @@ from sqlalchemy.types import CHAR, TypeDecorator
 
 
 class GUID(TypeDecorator):
-    """Platform-independent GUID type.
-
-    Uses PostgreSQL's UUID type, otherwise uses
-    CHAR(32), storing as string.
-
-    """
+    """Platform-independent GUID type."""
 
     impl = CHAR
     cache_ok = True
@@ -61,27 +56,22 @@ Base = declarative_base()
 class Tenant(Base):
     """
     Tenant model for multi-tenancy support.
-
-    Each tenant represents an organization or customer.
-    All other tables reference tenant_id for data isolation.
     """
 
     __tablename__ = "tenants"
 
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False)
-    slug = Column(String(255), unique=True, nullable=False, index=True)  # URL-safe identifier
-    plan = Column(String(50), default="basic")  # basic, pro, enterprise
+    slug = Column(String(255), unique=True, nullable=False, index=True)
+    plan = Column(String(50), default="basic")
     stripe_customer_id = Column(String(255), nullable=True)
     stripe_subscription_id = Column(String(255), nullable=True)
 
-    # Metadata
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(
         DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
     )
 
-    # Relationships
     customers = relationship("Customer", back_populates="tenant")
     api_keys = relationship("APIKey", back_populates="tenant")
     audit_logs = relationship("AuditLog", back_populates="tenant")
@@ -104,7 +94,6 @@ class Customer(Base):
     tenant = relationship("Tenant", back_populates="customers")
     api_keys = relationship("APIKey", back_populates="customer")
 
-    # Tenant filtering methods
     @classmethod
     def for_tenant(cls, db):
         """Get a query filtered by current tenant."""
@@ -135,7 +124,7 @@ class APIKey(Base):
     key_hash = Column(String(64), nullable=False, unique=True, index=True)
     name = Column(String(255))
     tier = Column(String(50), default="standard")
-    rate_limit = Column(Integer, default=100)  # requests per minute
+    rate_limit = Column(Integer, default=100)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     last_used_at = Column(DateTime)
     revoked_at = Column(DateTime)
@@ -144,7 +133,6 @@ class APIKey(Base):
     customer = relationship("Customer", back_populates="api_keys")
     audit_logs = relationship("AuditLog", back_populates="api_key")
 
-    # Tenant filtering methods
     @classmethod
     def for_tenant(cls, db):
         """Get a query filtered by current tenant."""
@@ -179,25 +167,20 @@ class AuditLog(Base):
     status_code = Column(Integer, nullable=False)
     latency_ms = Column(Integer, nullable=False)
 
-    # Request data
     prompt_hash = Column(String(64), index=True)
     prompt_length = Column(Integer)
     compliance_context = Column(JSON)
 
-    # Detection results
     entities_detected = Column(JSON)
     injection_score = Column(DECIMAL(5, 4))
 
-    # Compliance results
     compliance_status = Column(String(20))
     violations = Column(JSON)
     risk_score = Column(DECIMAL(5, 4))
 
-    # Billing
     tokens_analyzed = Column(Integer)
     tokens_billable = Column(Integer)
 
-    # Redaction (encrypted, separate table in production)
     redacted_prompt_encrypted = Column(LargeBinary)
 
     tenant = relationship("Tenant", back_populates="audit_logs")
@@ -205,7 +188,6 @@ class AuditLog(Base):
 
     __table_args__ = (Index("ix_audit_logs_tenant_timestamp", "tenant_id", "timestamp"),)
 
-    # Tenant filtering methods
     @classmethod
     def for_tenant(cls, db):
         """Get a query filtered by current tenant."""
@@ -237,22 +219,17 @@ class TokenUsage(Base):
     timestamp = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, index=True)
     endpoint = Column(String(255), nullable=False, index=True)
 
-    # Token counts
     input_tokens = Column(Integer, nullable=False)
     output_tokens = Column(Integer, nullable=False, default=0)
     total_tokens = Column(Integer, nullable=False)
 
-    # Model and pricing
     model = Column(String(50), nullable=False, default="gpt-3.5-turbo")
     estimated_cost_usd = Column(DECIMAL(10, 6), nullable=False)
 
-    # Risk assessment
-    risk_level = Column(String(20), nullable=False, default="safe")  # safe, warning, critical
+    risk_level = Column(String(20), nullable=False, default="safe")
 
-    # Audit
     audit_data = Column(JSON)
 
-    # Billing sync status
     reported_to_stripe = Column(Boolean, default=False, index=True)
 
     tenant = relationship("Tenant", back_populates="token_usage")
@@ -263,7 +240,6 @@ class TokenUsage(Base):
         Index("ix_token_usage_tenant_reported", "tenant_id", "reported_to_stripe"),
     )
 
-    # Tenant filtering methods
     @classmethod
     def for_tenant(cls, db):
         """Get a query filtered by current tenant."""

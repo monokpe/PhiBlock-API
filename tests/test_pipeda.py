@@ -1,7 +1,6 @@
 import pytest
 
 from app.compliance.engine import get_compliance_engine, reset_compliance_engine
-from app.compliance.models import ComplianceFramework
 from app.compliance.rules import load_compliance_rules
 
 

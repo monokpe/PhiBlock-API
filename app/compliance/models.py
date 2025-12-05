@@ -31,11 +31,6 @@ class ComplianceAction(str, Enum):
 class ComplianceRule:
     """
     A compliance rule that checks for specific violations.
-
-    Rules can be triggered by:
-    - Entity types (e.g., SSN, MEDICAL_ID)
-    - Keywords (e.g., "patient", "diagnosis")
-    - Patterns (e.g., regex for ICD codes)
     """
 
     id: str
@@ -44,14 +39,12 @@ class ComplianceRule:
     description: str
     severity: Severity
 
-    # Matching criteria
-    entity_types: List[str] = None  # PII entity types to match
-    keywords: List[str] = None  # Keywords that trigger rule
-    patterns: List[str] = None  # Regex patterns to match
+    entity_types: List[str] = None
+    keywords: List[str] = None
+    patterns: List[str] = None
 
-    # Action when matched
     action: ComplianceAction = ComplianceAction.FLAG
-    remediation: str = ""  # User-friendly fix message
+    remediation: str = ""
 
     def __post_init__(self):
         if self.entity_types is None:
@@ -61,7 +54,6 @@ class ComplianceRule:
         if self.patterns is None:
             self.patterns = []
 
-        # Ensure severity is proper enum
         if isinstance(self.severity, str):
             self.severity = Severity(self.severity)
         if isinstance(self.action, str):
@@ -79,8 +71,8 @@ class ComplianceViolation:
     message: str
     remediation: str
     action: ComplianceAction
-    matched_content: Optional[str] = None  # The content that triggered the rule
-    entity_types: List[str] = None  # Entity types involved
+    matched_content: Optional[str] = None
+    entity_types: List[str] = None
 
     def __post_init__(self):
         if self.entity_types is None:
@@ -97,7 +89,7 @@ class ComplianceResult:
 
     frameworks_checked: List[str]
     violations: List[ComplianceViolation]
-    compliant: bool  # True if no critical/high violations
+    compliant: bool
 
     @property
     def critical_violations(self) -> List[ComplianceViolation]:

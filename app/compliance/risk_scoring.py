@@ -56,34 +56,26 @@ class OverallRiskAssessment:
 class RiskScorer:
     """
     Calculates risk scores for security threats.
-
-    Scoring Model:
-    - PII Risk: Entity type * sensitivity * confidence
-    - Injection Risk: Model confidence * exposure
-    - Compliance Risk: Violation severity * framework importance
     """
 
-    # PII Entity Type Risk Weights (0-100)
     PII_WEIGHTS = {
-        "SSN": 95,  # Critical: unique identifier
-        "CREDIT_CARD": 90,  # Critical: financial
-        "PERSON": 70,  # High: personal name
-        "EMAIL": 60,  # Medium-High: contact info
-        "PHONE_NUMBER": 55,  # Medium: contact info
-        "DATE": 30,  # Low-Medium: partial identifier
-        "GPE": 20,  # Low: location (public)
-        "ORG": 15,  # Very Low: organization name
-        "UNKNOWN": 50,  # Medium: unknown type
+        "SSN": 95,
+        "CREDIT_CARD": 90,
+        "PERSON": 70,
+        "EMAIL": 60,
+        "PHONE_NUMBER": 55,
+        "DATE": 30,
+        "GPE": 20,
+        "ORG": 15,
+        "UNKNOWN": 50,
     }
 
-    # Compliance Framework Risk Weights (importance multiplier)
     FRAMEWORK_WEIGHTS = {
-        "HIPAA": 1.5,  # Healthcare - highest priority
-        "PCI_DSS": 1.4,  # Financial - high priority
-        "GDPR": 1.3,  # Privacy - high priority
+        "HIPAA": 1.5,
+        "PCI_DSS": 1.4,
+        "GDPR": 1.3,
     }
 
-    # Violation Severity Risk Scores
     SEVERITY_SCORES = {
         Severity.LOW: 20,
         Severity.MEDIUM: 40,
@@ -103,21 +95,11 @@ class RiskScorer:
     ) -> RiskScore:
         """
         Calculate risk score for a PII entity.
-
-        Args:
-            entity_type: Type of PII (SSN, PERSON, EMAIL, etc.)
-            confidence: Detection confidence (0-1)
-            context_sensitive: Whether context makes it more sensitive
-
-        Returns:
-            RiskScore for this entity
         """
         base_weight = self.PII_WEIGHTS.get(entity_type, self.PII_WEIGHTS["UNKNOWN"])
 
-        # Apply confidence multiplier
         score = base_weight * confidence
 
-        # Increase score if highly sensitive and high confidence
         if context_sensitive and confidence > 0.85:
             score = min(100, score * 1.1)
 
@@ -138,17 +120,9 @@ class RiskScorer:
     ) -> RiskScore:
         """
         Calculate risk score for prompt injection threat.
-
-        Args:
-            injection_confidence: Model confidence of injection (0-1)
-            prompt_length: Length of prompt (longer = higher exposure)
-
-        Returns:
-            RiskScore for injection threat
         """
         base_score = injection_confidence * 100
 
-        # Increase risk based on prompt length (exposure)
         if prompt_length > 500:
             length_multiplier = 1.2
         elif prompt_length > 1000:
@@ -173,17 +147,10 @@ class RiskScorer:
     ) -> RiskScore:
         """
         Calculate risk score for a compliance violation.
-
-        Args:
-            violation: ComplianceViolation object
-
-        Returns:
-            RiskScore for this violation
         """
         severity_score = self.SEVERITY_SCORES.get(violation.severity, 50)
         framework_weight = self.FRAMEWORK_WEIGHTS.get(violation.framework, 1.0)
 
-        # Combined score with framework importance
         score = min(100, severity_score * framework_weight)
         level = self._score_to_level(score)
 
@@ -203,18 +170,9 @@ class RiskScorer:
     ) -> OverallRiskAssessment:
         """
         Perform comprehensive risk assessment.
-
-        Args:
-            pii_entities: List of detected PII entities
-            injection_score: Injection threat confidence (0-1)
-            compliance_violations: List of compliance violations
-
-        Returns:
-            OverallRiskAssessment with complete analysis
         """
         individual_risks = []
 
-        # Score PII entities
         pii_score = 0.0
         if pii_entities:
             pii_scores = []
@@ -227,18 +185,19 @@ class RiskScorer:
 
             pii_score = sum(pii_scores) / len(pii_scores) if pii_scores else 0.0
 
-        # Score injection threat
         injection_risk = None
         if injection_score > 0.1:
             injection_risk = self.score_injection_threat(
                 injection_score,
-                prompt_length=100,  # Simplified for now
+                prompt_length=100,
             )
             individual_risks.append(injection_risk)
 
-        injection_score_normalized = injection_risk.value if injection_risk else 0.0
+        if injection_risk:
+            injection_score_normalized = injection_risk.value
+        else:
+            injection_score_normalized = 0.0
 
-        # Score compliance violations
         compliance_score = 0.0
         if compliance_violations:
             compliance_scores = []
@@ -251,24 +210,20 @@ class RiskScorer:
                 sum(compliance_scores) / len(compliance_scores) if compliance_scores else 0.0
             )
 
-        # Calculate overall score (weighted average)
-        weights = [0.4, 0.3, 0.3]  # PII, Injection, Compliance
+        weights = [0.4, 0.3, 0.3]
         scores = [pii_score, injection_score_normalized, compliance_score]
 
         overall_score = sum(s * w for s, w in zip(scores, weights))
         overall_level = self._score_to_level(overall_score)
 
-        # Get top 5 risks
         top_risks = sorted(individual_risks, key=lambda r: r.value, reverse=True)[:5]
 
-        # Generate recommendations
         recommendations = self._generate_recommendations(
             individual_risks,
             overall_level,
             len(pii_entities) if pii_entities else 0,
         )
 
-        # Count critical items
         critical_count = len([r for r in individual_risks if r.level == RiskLevel.CRITICAL])
 
         return OverallRiskAssessment(
@@ -304,22 +259,18 @@ class RiskScorer:
         """Generate actionable recommendations based on risks"""
         recommendations = []
 
-        # Critical level recommendations
         if overall_level == RiskLevel.CRITICAL:
             recommendations.append("🚨 CRITICAL: Block or quarantine content immediately")
             recommendations.append("Contact security team for incident response")
 
-        # High level recommendations
         elif overall_level == RiskLevel.HIGH:
             recommendations.append("⚠️ Apply strict redaction to all sensitive data")
             recommendations.append("Review and validate all detected entities")
 
-        # Medium level recommendations
         elif overall_level == RiskLevel.MEDIUM:
             recommendations.append("Apply selective redaction to high-risk entities")
             recommendations.append("Monitor for patterns and compliance trends")
 
-        # Specific recommendations based on risk types
         has_pii = any("PII" in r.component for r in risks)
         has_injection = any("INJECTION" in r.component for r in risks)
         has_compliance = any("COMPLIANCE" in r.component for r in risks)
@@ -340,7 +291,7 @@ class RiskScorer:
                     f"Address {len(frameworks)} framework violations: {', '.join(frameworks)}"
                 )
 
-        return recommendations[:5]  # Return top 5 recommendations
+        return recommendations[:5]
 
 
 def get_risk_scorer() -> RiskScorer:

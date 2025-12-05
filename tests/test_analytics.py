@@ -3,7 +3,7 @@ Tests for Analytics API.
 """
 
 import datetime
-import uuid
+
 
 import pytest
 from fastapi.testclient import TestClient

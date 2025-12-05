@@ -28,13 +28,7 @@ def get_signing_secret() -> Optional[str]:
 
 
 def sign_payload(payload: Dict, secret: str) -> Dict[str, str]:
-    """Return signature headers for a payload using HMAC-SHA256.
-
-    Headers returned:
-      - X-Guardrails-Signature: sha256=<hex>
-      - X-Guardrails-Timestamp: ISO timestamp
-    """
-    # Canonical JSON: sorted keys, no spaces
+    """Return signature headers for a payload using HMAC-SHA256."""
     body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
     mac = hmac.new(secret.encode("utf-8"), body, hashlib.sha256)
     sig = mac.hexdigest()
@@ -46,10 +40,7 @@ def sign_payload(payload: Dict, secret: str) -> Dict[str, str]:
 
 
 def is_allowed_webhook(url: str) -> bool:
-    """Check webhook URL against allowed domains from env.
-
-    If ALLOWED_WEBHOOK_DOMAINS is empty, allow all by default.
-    """
+    """Check webhook URL against allowed domains from env."""
     env = os.getenv("ALLOWED_WEBHOOK_DOMAINS", "").strip()
     if not env:
         return True
@@ -58,7 +49,6 @@ def is_allowed_webhook(url: str) -> bool:
         parsed = urlparse(url)
         host = parsed.hostname or ""
         allowed = [h.strip().lower() for h in env.split(",") if h.strip()]
-        # Simple exact or suffix match
         host_l = host.lower()
         for a in allowed:
             if host_l == a or host_l.endswith("." + a):
@@ -71,11 +61,7 @@ def is_allowed_webhook(url: str) -> bool:
 
 
 def is_rate_limited(url: str) -> bool:
-    """Check and increment rate limit for host using Redis if configured.
-
-    Returns True if the host is currently rate-limited.
-    If Redis is not configured or unavailable, this function will fail-open and return False.
-    """
+    """Check and increment rate limit for host using Redis if configured."""
     limit = int(os.getenv("WEBHOOK_RATE_LIMIT_PER_MINUTE", "0") or 0)
     if limit <= 0:
         return False
@@ -92,10 +78,8 @@ def is_rate_limited(url: str) -> bool:
         host = parsed.hostname or "unknown"
         r = redis.from_url(redis_url)
         key = f"webhook_rate:{host}:{datetime.now(timezone.utc).strftime('%Y%m%d%H%M')}"
-        # Increment and get current count
         count = r.incr(key)
         if count == 1:
-            # expire in 70 seconds to cover a minute window
             r.expire(key, 70)
         if count > limit:
             logger.warning(f"Rate limit exceeded for webhook host {host}: {count}/{limit}")

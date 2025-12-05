@@ -21,7 +21,6 @@ from app.webhooks import (
     WebhookEventType,
     WebhookNotifier,
     WebhookPayload,
-    WebhookStatus,
     get_webhook_notifier,
 )
 

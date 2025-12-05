@@ -10,6 +10,7 @@ Supports multiple redaction strategies:
 
 import hashlib
 import hmac
+import logging
 import os
 import re
 from enum import Enum
@@ -17,6 +18,8 @@ from typing import Dict, List, Optional, Tuple
 
 from app.compliance.models import ComplianceAction
 from app.secrets import secrets
+
+logger = logging.getLogger(__name__)
 
 
 class RedactionStrategy(Enum):
@@ -32,24 +35,14 @@ class RedactionStrategy(Enum):
 class RedactionService:
     """
     Redacts sensitive data from text while maintaining readability.
-
-    Features:
-    - Multiple redaction strategies
-    - Entity-based redaction
-    - Pattern-based redaction
-    - Consistent hash-based replacement
-    - Redaction mapping for audit trails
     """
 
     def __init__(self, strategy: RedactionStrategy = RedactionStrategy.TOKEN_REPLACEMENT):
         """
         Initialize the redaction service.
-
-        Args:
-            strategy: Default redaction strategy to use
         """
         self.strategy = strategy
-        self.redaction_map: Dict[str, str] = {}  # Maps original -> redacted
+        self.redaction_map: Dict[str, str] = {}
 
     def redact_text(
         self,
@@ -76,7 +69,6 @@ class RedactionService:
         redacted_text = text
         redaction_records = []
 
-        # Sort entities by start position (reverse) to maintain positions
         sorted_entities = sorted(
             entities,
             key=lambda e: e.get("start", 0),
@@ -92,13 +84,10 @@ class RedactionService:
             if not original or start < 0 or end <= start:
                 continue
 
-            # Generate redacted value
             redacted = self._generate_redacted_value(original, entity_type, strategy)
 
-            # Replace in text
             redacted_text = redacted_text[:start] + redacted + redacted_text[end:]
 
-            # Store mapping
             if keep_mapping:
                 self.redaction_map[original] = redacted
 
@@ -123,14 +112,6 @@ class RedactionService:
     ) -> Tuple[str, List[Dict]]:
         """
         Redact text matching patterns.
-
-        Args:
-            text: Original text
-            patterns: Dict of {pattern_name: regex_pattern}
-            strategy: Redaction strategy
-
-        Returns:
-            Tuple of (redacted_text, redaction_records)
         """
         if strategy is None:
             strategy = self.strategy
@@ -142,7 +123,6 @@ class RedactionService:
             try:
                 matches = list(re.finditer(pattern, text, re.IGNORECASE))
 
-                # Process matches in reverse order to maintain positions
                 for match in reversed(matches):
                     original = match.group(0)
                     start = match.start()
@@ -163,7 +143,7 @@ class RedactionService:
                         }
                     )
             except re.error as e:
-                print(f"Warning: Invalid pattern {pattern_name}: {e}")
+                logger.warning(f"Invalid pattern {pattern_name}: {e}")
 
         return redacted_text, redaction_records
 
@@ -175,23 +155,12 @@ class RedactionService:
     ) -> Tuple[str, List[Dict]]:
         """
         Redact based on compliance action.
-
-        Args:
-            text: Original text
-            entities: Entities to redact
-            action: Compliance action (BLOCK, REDACT, FLAG)
-
-        Returns:
-            Tuple of (result_text, redaction_records)
         """
         if action == ComplianceAction.BLOCK:
-            # For blocking, return empty or placeholder
             return "", []
         elif action == ComplianceAction.REDACT:
-            # Standard redaction
             return self.redact_text(text, entities)
         elif action == ComplianceAction.FLAG:
-            # Don't redact, just flag
             return text, []
 
         return text, []
@@ -204,14 +173,6 @@ class RedactionService:
     ) -> str:
         """
         Generate redacted value based on strategy.
-
-        Args:
-            original: Original value
-            entity_type: Type of entity
-            strategy: Redaction strategy
-
-        Returns:
-            Redacted value
         """
         if strategy == RedactionStrategy.FULL_MASK:
             return "****"
@@ -222,13 +183,9 @@ class RedactionService:
         elif strategy == RedactionStrategy.PARTIAL_MASK:
             if len(original) <= 4:
                 return "*" * len(original)
-            # Show first and last char
             return original[0] + "*" * (len(original) - 2) + original[-1]
 
         elif strategy == RedactionStrategy.HASH_REPLACEMENT:
-            # Use HMAC-SHA256 with a server secret when available to
-            # prevent preimage attacks against deterministic labels.
-            # Fallback to SHA-256 when no secret configured.
             key = secrets.get("PII_REDACTION_KEY") or os.getenv("PII_REDACTION_KEY")
             if key:
                 if isinstance(key, str):
@@ -260,9 +217,6 @@ class RedactionPipeline:
     def __init__(self, service: Optional[RedactionService] = None):
         """
         Initialize redaction pipeline.
-
-        Args:
-            service: RedactionService instance (creates new if None)
         """
         self.service = service or RedactionService()
         self.operations: List[Tuple] = []

@@ -4,10 +4,9 @@ Tests for Cache Service.
 Comprehensive tests for request deduplication caching.
 """
 
-import time
+
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from app.cache_service import (
     cache_result,

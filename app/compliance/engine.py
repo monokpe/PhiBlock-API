@@ -5,22 +5,18 @@ Loads compliance rules and evaluates text against them.
 Supports multiple compliance frameworks (HIPAA, GDPR, PCI-DSS).
 """
 
+import logging
 import re
 from typing import Dict, List, Optional
 
 from app.compliance.models import ComplianceResult, ComplianceRule, ComplianceViolation, Severity
 
+logger = logging.getLogger(__name__)
+
 
 class ComplianceEngine:
     """
     Evaluates content against compliance rules.
-
-    Features:
-    - Load rules from YAML definitions
-    - Match PII entities against rules
-    - Check for keywords and patterns
-    - Generate compliance violations
-    - Determine overall compliance status
     """
 
     def __init__(self):
@@ -30,9 +26,6 @@ class ComplianceEngine:
     def load_rules(self, rules: List[ComplianceRule]) -> None:
         """
         Load a set of compliance rules.
-
-        Args:
-            rules: List of ComplianceRule objects
         """
         for rule in rules:
             if rule.framework not in self.rules:
@@ -63,18 +56,14 @@ class ComplianceEngine:
 
         violations: List[ComplianceViolation] = []
 
-        # Check each framework's rules
         for framework in frameworks:
             if framework not in self.rules:
                 continue
 
             for rule in self.rules[framework]:
-                # Check entity type matches
                 rule_violations = self._check_rule(text, detected_entities, rule)
                 violations.extend(rule_violations)
 
-        # Determine compliance status
-        # Non-compliant if there are critical or high violations
         critical_violations = [
             v for v in violations if v.severity in [Severity.CRITICAL, Severity.HIGH]
         ]
@@ -94,18 +83,9 @@ class ComplianceEngine:
     ) -> List[ComplianceViolation]:
         """
         Check if a specific rule is violated in the text.
-
-        Args:
-            text: Text to check
-            detected_entities: Detected PII entities
-            rule: Rule to check
-
-        Returns:
-            List of violations (empty if rule not violated)
         """
         violations = []
 
-        # Check entity type matches
         if rule.entity_types:
             for entity in detected_entities:
                 if entity.get("type") in rule.entity_types:
@@ -123,7 +103,6 @@ class ComplianceEngine:
                         )
                     )
 
-        # Check keywords
         if rule.keywords:
             text_lower = text.lower()
             for keyword in rule.keywords:
@@ -140,9 +119,8 @@ class ComplianceEngine:
                             matched_content=keyword,
                         )
                     )
-                    break  # Don't report duplicate keyword matches
+                    break
 
-        # Check patterns
         if rule.patterns:
             for pattern in rule.patterns:
                 try:
@@ -161,7 +139,7 @@ class ComplianceEngine:
                             )
                         )
                 except re.error as e:
-                    print(f"Warning: Invalid regex pattern in rule {rule.id}: {e}")
+                    logger.warning(f"Invalid regex pattern in rule {rule.id}: {e}")
 
         return violations
 

@@ -18,48 +18,33 @@ from celery import Celery
 from celery.schedules import crontab
 from kombu import Exchange, Queue
 
-# Configure logging
 logger = logging.getLogger(__name__)
 
-# ============================================================================
-# CELERY CONFIGURATION
-# ============================================================================
-
-# Get configuration from environment or use defaults
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 BROKER_URL = os.getenv("BROKER_URL", REDIS_URL)
 RESULT_BACKEND = os.getenv("RESULT_BACKEND", REDIS_URL)
 
-# Create Celery app
 app = Celery("guardrails")
 
-# Configure Celery
 app.conf.update(
-    # Broker and backend configuration
     broker_url=BROKER_URL,
     result_backend=RESULT_BACKEND,
-    # Task configuration
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
-    # Task execution settings
     task_track_started=True,
-    task_time_limit=30 * 60,  # 30 minutes hard time limit
-    task_soft_time_limit=25 * 60,  # 25 minutes soft time limit
-    task_acks_late=True,  # Tasks acknowledged after execution
-    # Worker settings
-    worker_prefetch_multiplier=1,  # Process one task at a time
-    worker_max_tasks_per_child=1000,  # Recycle workers after 1000 tasks
-    # Retry configuration
+    task_time_limit=30 * 60,
+    task_soft_time_limit=25 * 60,
+    task_acks_late=True,
+    worker_prefetch_multiplier=1,
+    worker_max_tasks_per_child=1000,
     task_autoretry_for=(Exception,),
     task_max_retries=3,
-    task_default_retry_delay=60,  # 60 seconds between retries
-    # Result backend settings
-    result_expires=3600,  # Results expire after 1 hour
+    task_default_retry_delay=60,
+    result_expires=3600,
     result_persistent=True,
-    # Queue configuration
     task_queues=(
         Queue("detection", Exchange("detection"), routing_key="detection"),
         Queue("compliance", Exchange("compliance"), routing_key="compliance"),
@@ -67,7 +52,6 @@ app.conf.update(
         Queue("scoring", Exchange("scoring"), routing_key="scoring"),
         Queue("default", Exchange("default"), routing_key="default"),
     ),
-    # Task routing
     task_routes={
         "workers.tasks.detect_pii_async": {"queue": "detection"},
         "workers.tasks.check_compliance_async": {"queue": "compliance"},
@@ -81,14 +65,9 @@ app.conf.update(
 app.conf.beat_schedule = {
     "sync-usage-every-hour": {
         "task": "workers.celery_app.sync_usage_to_stripe",
-        "schedule": crontab(minute=0),  # Run every hour
+        "schedule": crontab(minute=0),
     },
 }
-
-
-# ============================================================================
-# TASK DEFINITIONS
-# ============================================================================
 
 
 @app.task(
@@ -100,12 +79,6 @@ app.conf.beat_schedule = {
 def detect_pii_async(self, text: str) -> Dict[str, Any]:
     """
     Async task: Detect PII in text.
-
-    Args:
-        text: Text to analyze
-
-    Returns:
-        Dict with detected entities
     """
     try:
         from app.detection import detect_pii
@@ -126,7 +99,6 @@ def detect_pii_async(self, text: str) -> Dict[str, Any]:
 
     except Exception as exc:
         logger.error(f"[detect_pii_async] Error: {exc}")
-        # Retry with exponential backoff
         raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
@@ -144,14 +116,6 @@ def check_compliance_async(
 ) -> Dict[str, Any]:
     """
     Async task: Check text against compliance rules.
-
-    Args:
-        text: Text to check
-        entities: Detected PII entities
-        frameworks: Frameworks to check (default: all)
-
-    Returns:
-        Dict with compliance results
     """
     try:
         from app.compliance import ComplianceEngine, load_compliance_rules
@@ -161,14 +125,11 @@ def check_compliance_async(
             f"{frameworks or 'all'} frameworks"
         )
 
-        # Load rules
         rules = load_compliance_rules()
 
-        # Create engine
         engine = ComplianceEngine()
         engine.load_rules(rules)
 
-        # Check compliance
         result_obj = engine.check_compliance(text, entities, frameworks=frameworks)
 
         result = {
@@ -185,7 +146,7 @@ def check_compliance_async(
                     "action": v.action.name,
                     "message": v.message,
                 }
-                for v in result_obj.violations[:10]  # Top 10 violations
+                for v in result_obj.violations[:10]
             ],
         }
 
@@ -211,21 +172,12 @@ def redact_async(
 ) -> Dict[str, Any]:
     """
     Async task: Redact sensitive data from text.
-
-    Args:
-        text: Original text
-        entities: Entities to redact
-        strategy: Redaction strategy (token, mask, partial, hash)
-
-    Returns:
-        Dict with redacted text and mapping
     """
     try:
         from app.compliance.redaction import RedactionService, RedactionStrategy
 
         logger.info(f"[redact_async] Redacting {len(entities)} entities using {strategy}")
 
-        # Convert strategy string to enum
         strategy_map = {
             "mask": RedactionStrategy.FULL_MASK,
             "token": RedactionStrategy.TOKEN_REPLACEMENT,
@@ -235,7 +187,6 @@ def redact_async(
 
         redaction_strategy = strategy_map.get(strategy, RedactionStrategy.TOKEN_REPLACEMENT)
 
-        # Redact
         service = RedactionService(redaction_strategy)
         redacted_text, records = service.redact_text(text, entities)
 
@@ -270,14 +221,6 @@ def score_risk_async(
 ) -> Dict[str, Any]:
     """
     Async task: Assess overall risk from all components.
-
-    Args:
-        entities: Detected PII entities
-        injection_score: Injection threat confidence
-        violations: Compliance violations (dicts)
-
-    Returns:
-        Dict with risk assessment
     """
     try:
         from app.compliance import RiskScorer
@@ -285,7 +228,6 @@ def score_risk_async(
 
         logger.info(f"[score_risk_async] Scoring {len(entities)} entities")
 
-        # Convert violations back to objects
         violation_objects = []
         if violations:
             severity_map = {s.name: s for s in Severity}
@@ -304,7 +246,6 @@ def score_risk_async(
                     )
                 )
 
-        # Score risk
         scorer = RiskScorer()
         assessment = scorer.assess_overall_risk(
             pii_entities=entities,
@@ -341,11 +282,6 @@ def score_risk_async(
         raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
-# ============================================================================
-# COMPOSITE TASKS
-# ============================================================================
-
-
 @app.task(
     bind=True,
     name="workers.tasks.analyze_complete_async",
@@ -359,33 +295,20 @@ def analyze_complete_async(
 ) -> Dict[str, Any]:
     """
     Async task: Complete analysis (PII detection + compliance + risk scoring).
-
-    This is a composite task that chains multiple sub-tasks.
-
-    Args:
-        text: Text to analyze
-        frameworks: Frameworks to check
-
-    Returns:
-        Dict with complete analysis results
     """
     try:
         logger.info("[analyze_complete_async] Starting complete analysis")
 
-        # Step 1: Detect PII
         pii_result = detect_pii_async.delay(text).get(timeout=60)
         if pii_result["status"] != "success":
             return {"status": "error", "error": "PII detection failed"}
 
         entities = pii_result["entities"]
 
-        # Step 2: Check compliance
         compliance_result = check_compliance_async.delay(text, entities, frameworks).get(timeout=60)
         if compliance_result["status"] != "success":
             return {"status": "error", "error": "Compliance check failed"}
 
-        # Step 3: Score risk
-        # Convert violations to dicts for JSON serialization
         violations = [
             {
                 "rule_id": v["rule_id"],
@@ -393,7 +316,7 @@ def analyze_complete_async(
                 "rule_name": v["rule_name"],
                 "severity": v["severity"],
                 "action": v["action"],
-                "message": v["message"],
+                "message": v.message,
             }
             for v in compliance_result["violations"]
         ]
@@ -402,12 +325,11 @@ def analyze_complete_async(
         if risk_result["status"] != "success":
             return {"status": "error", "error": "Risk scoring failed"}
 
-        # Combine results
         result = {
             "status": "success",
             "pii": {
                 "detected": pii_result["entity_count"],
-                "entities": entities[:10],  # Top 10 entities
+                "entities": entities[:10],
             },
             "compliance": {
                 "compliant": compliance_result["compliant"],
@@ -423,10 +345,8 @@ def analyze_complete_async(
 
         logger.info("[analyze_complete_async] Analysis complete")
 
-        # Notify webhook destination if provided
         if webhook_url:
             try:
-                # Import here to avoid module cycles
                 from app import webhook_security
                 from app.webhooks import WebhookEventType, WebhookPayload, get_webhook_notifier
 
@@ -468,7 +388,6 @@ def analyze_complete_async(
     except Exception as exc:
         logger.error(f"[analyze_complete_async] Error: {exc}")
 
-        # Attempt to notify failure to webhook destination if provided
         if "webhook_url" in locals() and webhook_url:
             try:
                 from app.webhooks import WebhookEventType, WebhookPayload, get_webhook_notifier
@@ -492,21 +411,9 @@ def analyze_complete_async(
         return {"status": "error", "error": str(exc)}
 
 
-# ============================================================================
-# UTILITY FUNCTIONS
-# ============================================================================
-
-
 def get_task_result(task_id: str, timeout: int = 30) -> Dict[str, Any]:
     """
     Get result of a completed task.
-
-    Args:
-        task_id: Task ID from Celery
-        timeout: Timeout in seconds
-
-    Returns:
-        Task result or error dict
     """
     try:
         from celery.result import AsyncResult
@@ -544,8 +451,6 @@ def get_task_status(task_id: str) -> str:
 def sync_usage_to_stripe():
     """
     Periodic task: Sync token usage to Stripe.
-
-    Aggregates usage from TokenUsage table and reports to Stripe.
     """
     from sqlalchemy import func
 
@@ -557,13 +462,10 @@ def sync_usage_to_stripe():
 
     db = SessionLocal()
     try:
-        # 1. Get all tenants with active Stripe subscriptions
         tenants = db.query(Tenant).filter(Tenant.stripe_subscription_id.isnot(None)).all()
 
         for tenant in tenants:
             try:
-                # 2. Aggregate unreported usage for this tenant
-                # We sum up total_tokens for all records where reported_to_stripe is False
                 usage_stats = (
                     db.query(
                         func.sum(TokenUsage.total_tokens).label("total_tokens"),
@@ -593,7 +495,6 @@ def sync_usage_to_stripe():
                             )
 
                             if success:
-                                # 4. Mark records as reported
                                 db.query(TokenUsage).filter(
                                     TokenUsage.tenant_id == tenant.id,
                                     TokenUsage.reported_to_stripe.is_(False),

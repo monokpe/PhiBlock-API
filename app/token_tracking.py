@@ -45,28 +45,16 @@ class RiskLevel(str, Enum):
 class TokenTracker:
     """
     Tracks and audits token usage across API endpoints.
-
-    Provides:
-    - Per-request token counting
-    - Cumulative usage tracking
-    - Endpoint usage statistics
-    - User/API key level analytics
-    - Token warning/alert system
     """
 
-    # Token usage thresholds (per request)
     TOKEN_WARNING_THRESHOLD = 8000
     TOKEN_CRITICAL_THRESHOLD = 15000
 
-    # Daily limits (per API key)
     DAILY_TOKEN_LIMIT = 1_000_000
 
     def __init__(self, default_model: TokenModel = TokenModel.DEFAULT):
         """
         Initialize TokenTracker.
-
-        Args:
-            default_model: Default tokenizer model to use
         """
         self.default_model = default_model
         self.tokenizers: Dict[str, tiktoken.Encoding] = {}
@@ -75,7 +63,6 @@ class TokenTracker:
     def _load_tokenizers(self) -> None:
         """Load available tokenizers."""
         try:
-            # Load the default encoding (cl100k_base covers all modern models)
             self.tokenizers[TokenModel.DEFAULT] = tiktoken.get_encoding(TokenModel.DEFAULT)
             logger.info("TokenTracker: Loaded tokenizer for cl100k_base")
         except Exception as e:
@@ -105,7 +92,6 @@ class TokenTracker:
             return len(tokens)
         except Exception as e:
             logger.error(f"TokenTracker: Error counting tokens: {e}")
-            # Fallback: estimate 1 token per 4 characters
             return len(text) // 4
 
     def count_tokens_batch(self, texts: List[str], model: TokenModel = None) -> List[int]:
@@ -150,21 +136,7 @@ class TokenTracker:
     ) -> Decimal:
         """
         Estimate API cost for token usage.
-
-        Pricing as of Nov 2024:
-        - GPT-3.5-turbo: $0.50/$1.50 per 1M input/output tokens
-        - GPT-4: $3.00/$6.00 per 1M input/output tokens
-        - GPT-4-turbo: $1.00/$3.00 per 1M input/output tokens
-
-        Args:
-            input_tokens: Number of input tokens
-            output_tokens: Number of output tokens (optional)
-            model: Model name for pricing
-
-        Returns:
-            Estimated cost in USD
         """
-        # Pricing per 1M tokens
         pricing = {
             "gpt-3.5-turbo": {"input": 0.50, "output": 1.50},
             "gpt-4": {"input": 3.00, "output": 6.00},
@@ -174,7 +146,6 @@ class TokenTracker:
 
         rates = pricing.get(model, pricing["default"])
 
-        # Calculate cost
         input_cost = Decimal(str(input_tokens)) * Decimal(str(rates["input"])) / Decimal("1000000")
         output_cost = (
             Decimal(str(output_tokens)) * Decimal(str(rates["output"])) / Decimal("1000000")
@@ -194,21 +165,11 @@ class TokenTracker:
 class TokenUsageLogger:
     """
     Logs token usage to database with audit trail.
-
-    Handles:
-    - Recording token usage per request
-    - Endpoint-level aggregation
-    - User/API key tracking
-    - Historical reports
     """
 
     def __init__(self, db: Session, token_tracker: TokenTracker):
         """
         Initialize TokenUsageLogger.
-
-        Args:
-            db: SQLAlchemy database session
-            token_tracker: TokenTracker instance for counting
         """
         self.db = db
         self.token_tracker = token_tracker
@@ -237,18 +198,14 @@ class TokenUsageLogger:
             Dictionary with usage statistics
         """
         try:
-            # Count tokens
             input_tokens = self.token_tracker.count_tokens(input_text)
             output_tokens = self.token_tracker.count_tokens(output_text) if output_text else 0
             total_tokens = input_tokens + output_tokens
 
-            # Determine risk level
             risk_level, warning = self.token_tracker.get_risk_level(total_tokens)
 
-            # Estimate cost
             estimated_cost = self.token_tracker.estimate_cost(input_tokens, output_tokens, model)
 
-            # Return usage stats
             usage_stats = {
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
@@ -320,14 +277,7 @@ class TokenUsageLogger:
     def check_daily_limit(self, api_key_id: str) -> Tuple[bool, Optional[str]]:
         """
         Check if API key has exceeded daily token limit.
-
-        Args:
-            api_key_id: API key ID
-
-        Returns:
-            Tuple of (is_within_limit, error_message)
         """
-        # This would query database for today's usage
         return (True, None)
 
 

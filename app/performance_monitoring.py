@@ -33,7 +33,6 @@ async def health_check(db: Session = Depends(get_db)):
     Returns basic system status.
     """
     try:
-        # Test database connection
         result = db.execute("SELECT 1")
         db_healthy = result is not None
     except Exception:
@@ -55,10 +54,8 @@ async def get_performance_metrics(
     Requires authentication.
     """
     try:
-        # Get connection pool info
         pool_info = get_engine_info()
 
-        # Get system metrics
         process = psutil.Process(os.getpid())
         memory_info = process.memory_info()
         cpu_percent = process.cpu_percent(interval=0.1)
@@ -192,7 +189,6 @@ async def run_query_benchmark(
 
     try:
         if query_type in ["simple", "all"]:
-            # Benchmark simple query
             start = time.time()
             for _ in range(iterations):
                 db.query(models.AuditLog).filter(
@@ -203,7 +199,6 @@ async def run_query_benchmark(
             results["simple_query_ms"] = round(simple_time, 3)
 
         if query_type in ["aggregate", "all"]:
-            # Benchmark aggregation
             from sqlalchemy import func
 
             start = time.time()
@@ -216,7 +211,6 @@ async def run_query_benchmark(
             results["aggregate_query_ms"] = round(agg_time, 3)
 
         if query_type in ["join", "all"]:
-            # Benchmark join query
             start = time.time()
             for _ in range(iterations):
                 db.query(models.AuditLog).filter(

@@ -2,6 +2,7 @@
 GraphQL mutation resolvers.
 """
 
+import logging
 import time
 import uuid
 from typing import Optional
@@ -11,9 +12,11 @@ from sqlalchemy.orm import Session
 
 from workers.detection import get_injection_score
 
-from .. import cache_service, logging, models
+from .. import cache_service, models
 from ..detection import detect_pii
 from .types import AnalysisResultType, DetectionResultType, TenantType
+
+logger = logging.getLogger(__name__)
 
 
 @strawberry.input
@@ -36,10 +39,8 @@ class Mutation:
         """Create a new tenant."""
         db: Session = info.context["db"]
 
-        # Generate slug if not provided
         slug = input.slug or input.name.lower().replace(" ", "-")
 
-        # Check for duplicate slug
         existing = db.query(models.Tenant).filter(models.Tenant.slug == slug).first()
         if existing:
             raise Exception(f"Tenant with slug '{slug}' already exists.")
@@ -96,11 +97,9 @@ class Mutation:
         start_time = time.time()
         request_id = uuid.uuid4()
 
-        # Check cache first
         if tenant_id:
             cached_result = cache_service.get_cached_result(prompt, str(tenant_id))
             if cached_result:
-                # Map cached dict to GraphQL types
                 detections_data = cached_result["detections"]
                 detections = DetectionResultType(
                     pii_found=detections_data["pii_found"],
@@ -116,19 +115,17 @@ class Mutation:
                     cached=True,
                 )
 
-        # Perform analysis
         entities = detect_pii(prompt)
         pii_found = len(entities) > 0
 
         try:
             injection_score = get_injection_score(prompt)
         except Exception as e:
-            print(f"Warning: Injection detection failed: {e}")
+            logger.warning(f"Injection detection failed, falling back to score 0.0. Error: {e}")
             injection_score = 0.0
 
         injection_detected = injection_score > 0.5
 
-        # Sanitization
         sanitized_prompt = prompt
         for entity in sorted(entities, key=lambda e: e["position"]["start"], reverse=True):
             start = entity["position"]["start"]
@@ -137,7 +134,6 @@ class Mutation:
                 sanitized_prompt[:start] + f"[{entity['type']}]" + sanitized_prompt[end:]
             )
 
-        # Construct result
         detections = DetectionResultType(
             pii_found=pii_found,
             entities=entities,
@@ -153,7 +149,6 @@ class Mutation:
             cached=False,
         )
 
-        # Cache result (need to convert to dict for caching)
         if tenant_id:
             cache_data = {
                 "request_id": str(request_id),
@@ -168,12 +163,6 @@ class Mutation:
                 "cached": False,
             }
             cache_service.cache_result(prompt, str(tenant_id), cache_data)
-
-        # Log request
-        # Note: log_request is async, but we are in async resolver
-        # We need to convert GraphQL types back to dicts/primitives for logging if needed
-        # But log_request takes primitives mostly.
-        # analysis_result arg in log_request expects a dict.
 
         analysis_result_dict = {
             "request_id": request_id,

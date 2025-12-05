@@ -83,7 +83,7 @@ class EntityType:
 @strawberry.type
 class DetectionResultType:
     pii_found: bool
-    entities: List[JSON]  # Using JSON for flexibility, or could define strict types
+    entities: List[EntityType]
     injection_detected: bool
     injection_score: float
 

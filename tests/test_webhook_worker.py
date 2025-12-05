@@ -1,7 +1,6 @@
 import types
 from unittest.mock import Mock, patch
 
-import pytest
 
 from workers.celery_app import analyze_complete_async
 

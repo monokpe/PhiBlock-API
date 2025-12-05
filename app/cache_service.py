@@ -13,11 +13,9 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
-# Cache configuration
 CACHE_ENABLED = os.getenv("CACHE_ENABLED", "true").lower() == "true"
 CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))  # 5 minutes default
 
-# Try to import Redis, but make it optional
 try:
     import redis
 
@@ -41,7 +39,6 @@ def generate_cache_key(prompt: str, tenant_id: str) -> str:
     Returns:
         Cache key in format: guardrails:cache:{tenant_id}:{prompt_hash}
     """
-    # Hash the prompt for consistent, short keys
     prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()[:16]
     return f"guardrails:cache:{tenant_id}:{prompt_hash}"
 
@@ -98,10 +95,8 @@ def cache_result(
         cache_key = generate_cache_key(prompt, tenant_id)
         ttl = ttl or CACHE_TTL
 
-        # Serialize result to JSON
         cached_data = json.dumps(result)
 
-        # Store with TTL
         redis_client.setex(cache_key, ttl, cached_data)
         logger.info(f"Cached result for tenant {tenant_id} (TTL: {ttl}s)")
         return True

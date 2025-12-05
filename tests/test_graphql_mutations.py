@@ -2,7 +2,6 @@
 Tests for GraphQL mutations.
 """
 
-import uuid
 
 import pytest
 from fastapi.testclient import TestClient

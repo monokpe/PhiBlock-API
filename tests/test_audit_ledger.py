@@ -1,7 +1,6 @@
-import os
+
 import tempfile
 
-from cryptography.hazmat.primitives import hashes
 
 from app.audit_ledger import AuditLedger
 

@@ -42,11 +42,10 @@ class AuditEncryptor:
     - Optional compression for large payloads
     """
 
-    # Constants
-    KEY_SIZE = 32  # 256 bits for AES-256
-    NONCE_SIZE = 12  # 96 bits (recommended for GCM)
-    TAG_SIZE = 16  # 128 bits (default for GCM)
-    PBKDF2_ITERATIONS = 100000  # NIST-recommended minimum
+    KEY_SIZE = 32
+    NONCE_SIZE = 12
+    TAG_SIZE = 16
+    PBKDF2_ITERATIONS = 100000
 
     def __init__(self, master_secret: Optional[str] = None):
         """
@@ -102,24 +101,20 @@ class AuditEncryptor:
             return None
 
         try:
-            # Generate salt and nonce
-            salt = os.urandom(16)  # 128 bits
+            salt = os.urandom(16)
             nonce = os.urandom(self.NONCE_SIZE)
 
-            # Derive key
             key = self._derive_key(salt)
 
-            # Serialize and encrypt
             plaintext = json.dumps(data, separators=(",", ":")).encode("utf-8")
             cipher = AESGCM(key)
             ciphertext = cipher.encrypt(nonce, plaintext, None)
 
-            # Return encrypted result with metadata
             return {
                 "ciphertext": base64.b64encode(ciphertext).decode("utf-8"),
                 "nonce": base64.b64encode(nonce).decode("utf-8"),
                 "salt": base64.b64encode(salt).decode("utf-8"),
-                "version": "1",  # For future key rotation
+                "version": "1",
             }
         except Exception:
             logger.exception("Encryption failed; data not encrypted")
@@ -139,19 +134,15 @@ class AuditEncryptor:
             return None
 
         try:
-            # Decode components
             ciphertext = base64.b64decode(encrypted["ciphertext"].encode("utf-8"))
             nonce = base64.b64decode(encrypted["nonce"].encode("utf-8"))
             salt = base64.b64decode(encrypted["salt"].encode("utf-8"))
 
-            # Derive key using same salt
             key = self._derive_key(salt)
 
-            # Decrypt
             cipher = AESGCM(key)
             plaintext = cipher.decrypt(nonce, ciphertext, None)
 
-            # Deserialize
             return json.loads(plaintext.decode("utf-8"))
         except Exception:
             logger.exception("Decryption failed")

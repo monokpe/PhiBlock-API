@@ -5,11 +5,11 @@ from .main import app
 
 # Load the tokenizer and model
 tokenizer = AutoTokenizer.from_pretrained(
-    "protectai/deberta-v3-base-prompt-injection-v2"
-)  # nosec B615
+    "protectai/deberta-v3-base-prompt-injection-v2", revision="1717d77"
+)
 model = AutoModelForSequenceClassification.from_pretrained(
-    "protectai/deberta-v3-base-prompt-injection-v2"
-)  # nosec B615
+    "protectai/deberta-v3-base-prompt-injection-v2", revision="1717d77"
+)
 
 
 def get_injection_score(prompt: str) -> float:

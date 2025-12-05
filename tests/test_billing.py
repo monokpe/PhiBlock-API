@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.billing import BillingService
-from app.models import Tenant
 
 
 @pytest.fixture

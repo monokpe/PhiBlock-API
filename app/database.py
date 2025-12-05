@@ -7,19 +7,16 @@ from sqlalchemy.orm import sessionmaker
 
 logger = logging.getLogger(__name__)
 
-# Database URL from environment or default
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@db/guardrails_db")
 
-# Connection pooling configuration for production performance
-# Uses QueuePool for high-concurrency scenarios
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     poolclass=pool.QueuePool,
-    pool_size=20,  # Number of connections to keep in pool
-    max_overflow=40,  # Additional connections beyond pool_size
-    pool_pre_ping=True,  # Test connections before use
-    pool_recycle=3600,  # Recycle connections every hour
-    echo=os.getenv("SQL_ECHO", "false").lower() == "true",  # Log SQL if enabled
+    pool_size=20,
+    max_overflow=40,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    echo=os.getenv("SQL_ECHO", "false").lower() == "true",
     connect_args={
         "connect_timeout": 5,
         "application_name": "guardrails_api",
@@ -29,13 +26,12 @@ engine = create_engine(
 
 # Connection pool event listeners for optimization
 @event.listens_for(engine, "connect")
-def set_sqlite_pragma(dbapi_conn, connection_record):
+def set_postgresql_connection_parameters(dbapi_conn, connection_record):
     """Set PostgreSQL connection parameters for performance."""
     if "postgresql" in SQLALCHEMY_DATABASE_URL.lower():
         cursor = dbapi_conn.cursor()
-        # Enable query optimization
-        cursor.execute("SET statement_timeout = 30000")  # 30 second query timeout
-        cursor.execute("SET work_mem = '256MB'")  # Increase working memory for complex queries
+        cursor.execute("SET statement_timeout = 30000")
+        cursor.execute("SET work_mem = '256MB'")
         cursor.close()
 
 
@@ -49,7 +45,7 @@ SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine,
-    expire_on_commit=False,  # Avoid unnecessary re-queries after commit
+    expire_on_commit=False,
 )
 
 

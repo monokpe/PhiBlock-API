@@ -2,7 +2,7 @@
 Analytics API endpoints.
 """
 
-import json
+
 from datetime import datetime, timedelta
 from typing import Dict
 
@@ -49,17 +49,14 @@ def get_analytics_stats(
     start_date = get_date_range(range)
     tenant_id = current_user.tenant_id
 
-    # Base query for audit logs
     logs_query = db.query(models.AuditLog).filter(
         models.AuditLog.tenant_id == tenant_id, models.AuditLog.timestamp >= start_date
     )
 
-    # Base query for token usage
     usage_query = db.query(models.TokenUsage).filter(
         models.TokenUsage.tenant_id == tenant_id, models.TokenUsage.timestamp >= start_date
     )
 
-    # Aggregations
     total_requests = logs_query.count()
 
     token_stats = usage_query.with_entities(
@@ -70,16 +67,12 @@ def get_analytics_stats(
     total_tokens = token_stats.total_tokens or 0
     estimated_cost = float(token_stats.total_cost or 0.0)
 
-    # Security stats
-    # Injection > 0.5
     injection_count = logs_query.filter(models.AuditLog.injection_score > 0.5).count()
 
-    # PII detected
     pii_count = logs_query.filter(
         models.AuditLog.entities_detected.isnot(None), models.AuditLog.entities_detected != "[]"
     ).count()
 
-    # Avg latency
     avg_latency = logs_query.with_entities(func.avg(models.AuditLog.latency_ms)).scalar() or 0.0
 
     return AnalyticsStatsResponse(
@@ -114,7 +107,6 @@ def get_analytics_timeseries(
         .all()
     )
 
-    # Aggregate in Python
     data_map = {}
 
     for log in logs:
@@ -126,7 +118,6 @@ def get_analytics_timeseries(
         data_map[date_key]["total_latency"] += log.latency_ms
         data_map[date_key]["count"] += 1
 
-        # Check violations
         is_violation = False
         if log.injection_score and log.injection_score > 0.5:
             is_violation = True
@@ -136,7 +127,6 @@ def get_analytics_timeseries(
         if is_violation:
             data_map[date_key]["violations"] += 1
 
-    # Convert to list
     result_data = []
     sorted_dates = sorted(data_map.keys())
 
@@ -174,23 +164,13 @@ def get_violations_breakdown(
     injection_counts = {"Prompt Injection": 0}
 
     for log in logs:
-        # PII
         if log.entities_detected:
-            # entities_detected is a list of dicts: [{'type': 'EMAIL', ...}]
-            # If it's stored as JSON/dict in model, SQLAlchemy handles it
             entities = log.entities_detected
-            if isinstance(entities, str):
-                try:
-                    entities = json.loads(entities)
-                except Exception:
-                    entities = []
-
             if isinstance(entities, list):
                 for entity in entities:
                     etype = entity.get("type", "UNKNOWN")
                     pii_counts[etype] = pii_counts.get(etype, 0) + 1
 
-        # Injection
         if log.injection_score and log.injection_score > 0.5:
             injection_counts["Prompt Injection"] += 1
 

@@ -23,7 +23,6 @@ class Query:
 
         tenants = db.query(models.Tenant).offset(skip).limit(page_size).all()
 
-        # Strawberry handles mapping if fields match
         return tenants
 
     @strawberry.field
