@@ -38,7 +38,7 @@ class RuleLoader:
         """
         Load all rules from YAML files in the rules directory.
         """
-        rules = []
+        rules: List[ComplianceRule] = []
 
         if not self.rules_dir.exists():
             logger.warning(f"Rules directory not found: {self.rules_dir}")

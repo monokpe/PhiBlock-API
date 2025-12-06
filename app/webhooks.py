@@ -16,7 +16,7 @@ Features:
 import logging
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 import httpx
@@ -133,7 +133,7 @@ class WebhookNotifier:
         self.timeout = timeout
         self.max_retries = max_retries
         self.retry_delay = retry_delay
-        self.delivery_log = []
+        self.delivery_log: List[Dict[str, Any]] = []
 
     def validate_webhook_url(self, url: str) -> Tuple[bool, Optional[str]]:
         """
