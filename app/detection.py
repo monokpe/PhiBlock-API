@@ -13,7 +13,7 @@ REGEX_PATTERNS = {
 
 def detect_pii(text: str) -> list[dict]:
     """Detect PII in a string using regex and spaCy."""
-    entities = []
+    entities: list[dict] = []
 
     for entity_type, pattern in REGEX_PATTERNS.items():
         for match in re.finditer(pattern, text):

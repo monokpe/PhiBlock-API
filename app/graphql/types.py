@@ -56,11 +56,11 @@ class AuditLogType:
     latency_ms: int
     prompt_hash: Optional[str]
     prompt_length: Optional[int]
-    compliance_context: Optional[JSON]
-    entities_detected: Optional[JSON]
+    compliance_context: Optional[JSON]  # type: ignore
+    entities_detected: Optional[JSON]  # type: ignore
     injection_score: Optional[float]
     compliance_status: Optional[str]
-    violations: Optional[JSON]
+    violations: Optional[JSON]  # type: ignore
     risk_score: Optional[float]
     tokens_analyzed: Optional[int]
     tokens_billable: Optional[int]

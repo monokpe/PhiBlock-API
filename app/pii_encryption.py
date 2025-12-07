@@ -55,6 +55,8 @@ class PIIEncryptor:
     def encrypt(self, plaintext: str) -> Optional[str]:
         if not self.enabled or plaintext is None:
             return plaintext
+        if self.fernet is None:
+            return plaintext
         try:
             token = self.fernet.encrypt(plaintext.encode("utf-8"))
             return token.decode("utf-8")
@@ -64,6 +66,8 @@ class PIIEncryptor:
 
     def decrypt(self, token: str) -> Optional[str]:
         if not self.enabled or token is None:
+            return token
+        if self.fernet is None:
             return token
         try:
             data = self.fernet.decrypt(token.encode("utf-8"))

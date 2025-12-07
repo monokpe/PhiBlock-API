@@ -9,7 +9,7 @@ import hashlib
 import json
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ def get_cached_result(prompt: str, tenant_id: str) -> Optional[Dict[str, Any]]:
 
         if cached_data:
             logger.info(f"Cache hit for tenant {tenant_id}")
-            return json.loads(cached_data)
+            return cast(Dict[str, Any], json.loads(cached_data))
 
         logger.debug(f"Cache miss for tenant {tenant_id}")
         return None

@@ -12,10 +12,17 @@ from sqlalchemy.orm import Session
 
 from workers.detection import get_injection_score
 
-from .. import cache_service, models
+from .. import cache_service
 from .. import logging as local_logging
+from .. import models
 from ..detection import detect_pii
-from .types import AnalysisResultType, DetectionResultType, TenantType
+from .types import (
+    AnalysisResultType,
+    DetectionResultType,
+    EntityPositionType,
+    EntityType,
+    TenantType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -107,14 +114,14 @@ class Mutation:
                     entities=detections_data["entities"],
                     injection_detected=detections_data["injection_detected"],
                     injection_score=detections_data["injection_score"],
-                )
+                )  # type: ignore
                 return AnalysisResultType(
                     request_id=request_id,
                     status="completed",
                     sanitized_prompt=cached_result["sanitized_prompt"],
                     detections=detections,
                     cached=True,
-                )
+                )  # type: ignore
 
         entities = detect_pii(prompt)
         pii_found = len(entities) > 0
@@ -137,7 +144,17 @@ class Mutation:
 
         detections = DetectionResultType(
             pii_found=pii_found,
-            entities=entities,
+            entities=[
+                EntityType(
+                    type=e["type"],
+                    text=e["value"],
+                    position=EntityPositionType(
+                        start=e["position"]["start"], end=e["position"]["end"]
+                    ),  # type: ignore
+                    score=e["confidence"],
+                )
+                for e in entities
+            ],
             injection_detected=injection_detected,
             injection_score=round(injection_score, 4),
         )
@@ -148,7 +165,7 @@ class Mutation:
             sanitized_prompt=sanitized_prompt,
             detections=detections,
             cached=False,
-        )
+        )  # type: ignore
 
         if tenant_id:
             cache_data = {

@@ -1,9 +1,9 @@
 import logging
 import os
-from typing import Generator
+from typing import Any, Generator, cast
 
 from sqlalchemy import create_engine, event, pool
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,6 @@ engine = create_engine(
 # Connection pool event listeners for optimization
 @event.listens_for(engine, "connect")
 def set_postgresql_connection_parameters(dbapi_conn, connection_record):
-    """Set PostgreSQL connection parameters for performance."""
     if "postgresql" in SQLALCHEMY_DATABASE_URL.lower():
         cursor = dbapi_conn.cursor()
         cursor.execute("SET statement_timeout = 30000")
@@ -37,7 +36,6 @@ def set_postgresql_connection_parameters(dbapi_conn, connection_record):
 
 @event.listens_for(engine, "connect")
 def log_pool_connect(dbapi_conn, connection_record):
-    """Log pool connections for monitoring."""
     logger.debug("Database connection acquired from pool")
 
 
@@ -61,23 +59,23 @@ def get_db() -> Generator:
         db.close()
 
 
-def get_db_sync() -> SessionLocal:
-    """Synchronous database session for non-async contexts."""
+def get_db_sync() -> Session:
     return SessionLocal()
 
 
 def close_db_session(db) -> None:
-    """Explicitly close database session."""
     if db:
         db.close()
 
 
 def get_engine_info() -> dict:
-    """Get connection pool statistics for monitoring."""
     pool_obj = engine.pool
+    # Cast to Any to avoid mypy error about missing 'overflow' method on base Pool class
+    # We use hasattr checks at runtime for safety
+    pool_any = cast(Any, pool_obj)
     return {
         "pool_size": pool_obj.size() if hasattr(pool_obj, "size") else "N/A",
         "checked_out": (pool_obj.checkedout() if hasattr(pool_obj, "checkedout") else "N/A"),
-        "overflow": pool_obj.overflow() if hasattr(pool_obj, "overflow") else "N/A",
-        "total": (pool_obj.size() + pool_obj.overflow() if hasattr(pool_obj, "size") else "N/A"),
+        "overflow": pool_any.overflow() if hasattr(pool_obj, "overflow") else "N/A",
+        "total": (pool_obj.size() + pool_any.overflow() if hasattr(pool_obj, "size") else "N/A"),
     }

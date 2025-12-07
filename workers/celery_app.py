@@ -77,9 +77,6 @@ app.conf.beat_schedule = {
     autoretry_for=(Exception,),
 )
 def detect_pii_async(self, text: str) -> Dict[str, Any]:
-    """
-    Async task: Detect PII in text.
-    """
     try:
         from app.detection import detect_pii
 
@@ -114,9 +111,6 @@ def check_compliance_async(
     entities: List[Dict],
     frameworks: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """
-    Async task: Check text against compliance rules.
-    """
     try:
         from app.compliance import ComplianceEngine, load_compliance_rules
 
@@ -170,9 +164,6 @@ def redact_async(
     entities: List[Dict],
     strategy: str = "token",
 ) -> Dict[str, Any]:
-    """
-    Async task: Redact sensitive data from text.
-    """
     try:
         from app.compliance.redaction import RedactionService, RedactionStrategy
 
@@ -219,9 +210,6 @@ def score_risk_async(
     injection_score: float = 0.0,
     violations: Optional[List[Dict]] = None,
 ) -> Dict[str, Any]:
-    """
-    Async task: Assess overall risk from all components.
-    """
     try:
         from app.compliance import RiskScorer
         from app.compliance.models import ComplianceAction, ComplianceViolation, Severity
@@ -236,13 +224,13 @@ def score_risk_async(
             for v in violations:
                 violation_objects.append(
                     ComplianceViolation(
-                        rule_id=v.get("rule_id"),
-                        framework=v.get("framework"),
-                        rule_name=v.get("rule_name"),
-                        severity=severity_map.get(v.get("severity"), Severity.MEDIUM),
-                        message=v.get("message"),
-                        remediation=v.get("remediation"),
-                        action=action_map.get(v.get("action"), ComplianceAction.FLAG),
+                        rule_id=str(v.get("rule_id", "")),
+                        framework=str(v.get("framework", "")),
+                        rule_name=str(v.get("rule_name", "")),
+                        severity=severity_map.get(str(v.get("severity")), Severity.MEDIUM),
+                        message=str(v.get("message", "")),
+                        remediation=str(v.get("remediation", "")),
+                        action=action_map.get(str(v.get("action")), ComplianceAction.FLAG),
                     )
                 )
 
@@ -293,9 +281,6 @@ def analyze_complete_async(
     webhook_url: Optional[str] = None,
     sign_payload: bool = False,
 ) -> Dict[str, Any]:
-    """
-    Async task: Complete analysis (PII detection + compliance + risk scoring).
-    """
     try:
         logger.info("[analyze_complete_async] Starting complete analysis")
 
@@ -412,9 +397,6 @@ def analyze_complete_async(
 
 
 def get_task_result(task_id: str, timeout: int = 30) -> Dict[str, Any]:
-    """
-    Get result of a completed task.
-    """
     try:
         from celery.result import AsyncResult
 
@@ -440,18 +422,14 @@ def get_task_result(task_id: str, timeout: int = 30) -> Dict[str, Any]:
 
 
 def get_task_status(task_id: str) -> str:
-    """Get status of a task"""
     from celery.result import AsyncResult
 
     result = AsyncResult(task_id, app=app)
-    return result.state
+    return str(result.state)
 
 
 @app.task(name="workers.celery_app.sync_usage_to_stripe")
 def sync_usage_to_stripe():
-    """
-    Periodic task: Sync token usage to Stripe.
-    """
     from sqlalchemy import func
 
     from app.billing import billing_service
@@ -478,7 +456,10 @@ def sync_usage_to_stripe():
                     .first()
                 )
 
-                total_tokens = usage_stats.total_tokens or 0
+                if usage_stats and usage_stats.total_tokens:
+                    total_tokens = usage_stats.total_tokens
+                else:
+                    total_tokens = 0
 
                 if total_tokens > 0:
                     logger.info(f"Reporting {total_tokens} tokens for tenant {tenant.slug}")
@@ -486,28 +467,32 @@ def sync_usage_to_stripe():
                     import stripe
 
                     if billing_service.api_key:
-                        subscription = stripe.Subscription.retrieve(tenant.stripe_subscription_id)
-                        if subscription and subscription["items"]["data"]:
-                            subscription_item_id = subscription["items"]["data"][0].id
-
-                            success = billing_service.report_usage(
-                                subscription_item_id, int(total_tokens)
+                        if tenant.stripe_subscription_id:
+                            subscription = stripe.Subscription.retrieve(
+                                str(tenant.stripe_subscription_id)
                             )
+                            if subscription and subscription["items"]["data"]:
+                                subscription_item_id = subscription["items"]["data"][0].id
 
-                            if success:
-                                db.query(TokenUsage).filter(
-                                    TokenUsage.tenant_id == tenant.id,
-                                    TokenUsage.reported_to_stripe.is_(False),
-                                ).update({TokenUsage.reported_to_stripe: True})
-
-                                db.commit()
-                                logger.info(
-                                    f"Successfully synced {total_tokens} tokens for {tenant.slug}"
+                                success = billing_service.report_usage(
+                                    subscription_item_id, int(total_tokens)
                                 )
+
+                                if success:
+                                    db.query(TokenUsage).filter(
+                                        TokenUsage.tenant_id == tenant.id,
+                                        TokenUsage.reported_to_stripe.is_(False),
+                                    ).update({TokenUsage.reported_to_stripe: True})
+                                    db.commit()
+
+                                    logger.info(
+                                        f"Successfully synced {total_tokens} tokens for "
+                                        f"{tenant.slug}"
+                                    )
+                                else:
+                                    logger.error(f"Failed to report usage for {tenant.slug}")
                             else:
-                                logger.error(f"Failed to report usage for {tenant.slug}")
-                        else:
-                            logger.error(f"No subscription items found for {tenant.slug}")
+                                logger.error(f"No subscription items found for {tenant.slug}")
                     else:
                         logger.warning("Stripe API key not set, skipping report")
 

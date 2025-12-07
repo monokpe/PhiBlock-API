@@ -36,7 +36,9 @@ def _get_ledger_key() -> Optional[bytes]:
         return None
     if isinstance(key, str):
         return key.encode("utf-8")
-    return key
+    if isinstance(key, bytes):
+        return key
+    return None
 
 
 def _hmac_sign(key: bytes, message: bytes) -> str:

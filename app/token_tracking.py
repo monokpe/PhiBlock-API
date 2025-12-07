@@ -16,7 +16,7 @@ import logging
 from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import tiktoken
 from sqlalchemy.orm import Session
@@ -206,7 +206,7 @@ class TokenUsageLogger:
 
             estimated_cost = self.token_tracker.estimate_cost(input_tokens, output_tokens, model)
 
-            usage_stats = {
+            usage_stats: Dict[str, Any] = {
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
                 "total_tokens": total_tokens,
@@ -237,7 +237,7 @@ class TokenUsageLogger:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
-    def get_usage_by_endpoint(self, api_key_id: str, days: int = 30) -> Dict[str, Dict]:
+    def get_usage_by_endpoint(self, api_key_id: str, days: int = 30) -> Dict[str, Any]:
         """
         Get aggregated token usage by endpoint.
 
@@ -255,7 +255,7 @@ class TokenUsageLogger:
             "total_cost_usd": 0.0,
         }
 
-    def get_daily_usage(self, api_key_id: str, date: Optional[str] = None) -> Dict:
+    def get_daily_usage(self, api_key_id: str, date: Optional[str] = None) -> Dict[str, Any]:
         """
         Get daily token usage for API key.
 

@@ -50,7 +50,9 @@ class BillingService:
             logger.error(f"Failed to create Stripe subscription: {e}")
             return None
 
-    def report_usage(self, subscription_item_id: str, quantity: int, timestamp: int = None) -> bool:
+    def report_usage(
+        self, subscription_item_id: str, quantity: int, timestamp: Optional[int] = None
+    ) -> bool:
         """
         Reports metered usage to Stripe.
         """
@@ -66,7 +68,7 @@ class BillingService:
                 timestamp=timestamp or int(time.time()),
                 action="increment",
                 idempotency_key=idempotency_key,
-            )
+            )  # type: ignore
             return True
         except Exception as e:
             logger.error(f"Failed to report usage to Stripe: {e}")

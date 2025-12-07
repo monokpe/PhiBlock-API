@@ -3,7 +3,7 @@ import threading
 from datetime import datetime, timezone
 from typing import Dict, Optional, Tuple
 
-import redis
+import redis  # type: ignore
 from fastapi import Depends, HTTPException, status
 
 from . import models
@@ -41,7 +41,7 @@ class RateLimiter:
             return True
 
     def __call__(self, user: models.APIKey = Depends(get_current_user)):
-        rate_limit = user.rate_limit or self.requests_per_minute
+        rate_limit = int(user.rate_limit) if user.rate_limit else self.requests_per_minute
         key = f"rate_limit:{user.id}"
 
         try:

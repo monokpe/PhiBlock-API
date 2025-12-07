@@ -17,7 +17,7 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 try:
     from cryptography.hazmat.primitives import hashes
@@ -143,7 +143,7 @@ class AuditEncryptor:
             cipher = AESGCM(key)
             plaintext = cipher.decrypt(nonce, ciphertext, None)
 
-            return json.loads(plaintext.decode("utf-8"))
+            return cast(Dict[str, Any], json.loads(plaintext.decode("utf-8")))
         except Exception:
             logger.exception("Decryption failed")
             return None

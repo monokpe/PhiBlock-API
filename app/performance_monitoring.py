@@ -13,6 +13,7 @@ from datetime import datetime
 
 import psutil
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from . import models
@@ -33,7 +34,7 @@ async def health_check(db: Session = Depends(get_db)):
     Returns basic system status.
     """
     try:
-        result = db.execute("SELECT 1")
+        result = db.execute(text("SELECT 1"))
         db_healthy = result is not None
     except Exception:
         db_healthy = False
@@ -127,8 +128,8 @@ async def get_token_usage_stats(
     try:
         stats = QueryOptimizer.get_token_usage_stats(
             db,
-            tenant_id=current_user.tenant_id,
-            api_key_id=current_user.id,
+            tenant_id=str(current_user.tenant_id),
+            api_key_id=str(current_user.id),
             days=days,
         )
         return stats
@@ -150,7 +151,7 @@ async def get_optimized_audit_logs(
     try:
         logs = QueryOptimizer.get_audit_logs_optimized(
             db,
-            tenant_id=current_user.tenant_id,
+            tenant_id=str(current_user.tenant_id),
             limit=limit,
             offset=offset,
         )

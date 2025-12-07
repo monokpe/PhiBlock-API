@@ -38,22 +38,17 @@ class GuardrailsCallbackHandler(BaseCallbackHandler):
         self.api_key = api_key or os.getenv("GUARDRAILS_API_KEY")
         self.raise_on_violation = raise_on_violation
 
-    def on_llm_start(
-        self, serialized: Dict[str, Any], prompts: List[str], **kwargs: Any
-    ) -> None:
-        """Run when LLM starts running."""
+    def on_llm_start(self, serialized: Dict[str, Any], prompts: List[str], **kwargs: Any) -> None:
         for prompt in prompts:
             self._check_compliance(prompt, "input")
 
     def on_llm_end(self, response: Any, **kwargs: Any) -> None:
-        """Run when LLM ends running."""
         if hasattr(response, "generations"):
             for generation_list in response.generations:
                 for generation in generation_list:
                     self._check_compliance(generation.text, "output")
 
     def _check_compliance(self, text: str, source: str) -> None:
-        """Call Guardrails API to check compliance."""
         if not text or not text.strip():
             return
 
@@ -120,12 +115,7 @@ class GuardrailsRunnable(Runnable):
         elif hasattr(input, "content"):
             text = input.content
         elif isinstance(input, dict):
-            text = (
-                input.get("text")
-                or input.get("content")
-                or input.get("input")
-                or str(input)
-            )
+            text = input.get("text") or input.get("content") or input.get("input") or str(input)
         else:
             text = str(input)
 
@@ -133,9 +123,7 @@ class GuardrailsRunnable(Runnable):
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
 
-        resp = requests.post(
-            f"{self.api_url}/v1/analyze", json={"prompt": text}, headers=headers
-        )
+        resp = requests.post(f"{self.api_url}/v1/analyze", json={"prompt": text}, headers=headers)
         resp.raise_for_status()
         result = resp.json()
 

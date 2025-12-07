@@ -7,7 +7,7 @@ queries are automatically filtered by the current tenant context.
 
 import uuid
 from functools import wraps
-from typing import Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar, cast
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Query, Session
@@ -70,7 +70,7 @@ def get_tenant_query(db: Session, model: Type[T]) -> Query:
             f"Cannot apply tenant filtering."
         )
 
-    return db.query(model).filter(model.tenant_id == tenant_id)
+    return db.query(model).filter(cast(Any, model).tenant_id == tenant_id)
 
 
 def get_tenant_item(
@@ -81,7 +81,7 @@ def get_tenant_item(
     """
     Get a single item by ID, ensuring it belongs to the current tenant.
     """
-    return get_tenant_query(db, model).filter(model.id == item_id).first()
+    return get_tenant_query(db, model).filter(cast(Any, model).id == item_id).first()
 
 
 def verify_tenant_ownership(

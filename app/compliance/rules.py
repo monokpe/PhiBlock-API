@@ -6,17 +6,13 @@ Supports validation and rule merging from multiple sources.
 """
 
 import logging
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
 
-from app.compliance.models import (
-    ComplianceAction,
-    ComplianceFramework,
-    ComplianceRule,
-    Severity,
-)
+from app.compliance.models import ComplianceAction, ComplianceFramework, ComplianceRule, Severity
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +21,6 @@ class RuleLoader:
     """Load compliance rules from YAML files"""
 
     def __init__(self, rules_dir: Optional[str] = None):
-        """
-        Initialize the rule loader.
-        """
         if rules_dir is None:
             current_dir = Path(__file__).parent
             rules_dir = str(current_dir / "definitions")
@@ -35,9 +28,6 @@ class RuleLoader:
         self.rules_dir = Path(rules_dir)
 
     def load_all_rules(self) -> List[ComplianceRule]:
-        """
-        Load all rules from YAML files in the rules directory.
-        """
         rules: List[ComplianceRule] = []
 
         if not self.rules_dir.exists():
@@ -56,9 +46,6 @@ class RuleLoader:
         return rules
 
     def load_rules_from_file(self, filepath: str) -> List[ComplianceRule]:
-        """
-        Load rules from a single YAML file.
-        """
         with open(filepath, "r") as f:
             data = yaml.safe_load(f)
 
@@ -80,9 +67,6 @@ class RuleLoader:
     def _parse_rule(
         self, rule_data: Dict[str, Any], default_framework: Optional[str] = None
     ) -> Optional[ComplianceRule]:
-        """
-        Parse a single rule from YAML data.
-        """
         framework_str = rule_data.get("framework", default_framework)
         if not framework_str:
             raise ValueError("Framework not specified")
@@ -131,9 +115,6 @@ class RuleLoader:
         )
 
     def validate_rules(self, rules: List[ComplianceRule]) -> Dict[str, Any]:
-        """
-        Validate a set of rules.
-        """
         report: Dict[str, Any] = {
             "total": len(rules),
             "by_framework": {},
@@ -151,8 +132,6 @@ class RuleLoader:
 
             action = rule.action.name.lower()
             report["by_action"][action] = report["by_action"].get(action, 0) + 1
-
-            import re
 
             for pattern in rule.patterns:
                 try:

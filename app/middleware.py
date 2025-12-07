@@ -7,7 +7,7 @@ and makes it available throughout the request lifecycle.
 
 import uuid
 from contextvars import ContextVar
-from typing import Callable, Optional
+from typing import Callable, Optional, cast
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -29,7 +29,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
 
         try:
             response = await call_next(request)
-            return response
+            return cast(Response, response)
         finally:
             _tenant_context.set(None)
 

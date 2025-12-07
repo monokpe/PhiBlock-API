@@ -23,7 +23,7 @@ class Query:
 
         tenants = db.query(models.Tenant).offset(skip).limit(page_size).all()
 
-        return tenants
+        return tenants  # type: ignore
 
     @strawberry.field
     def tenant(self, info, tenant_id: uuid.UUID) -> Optional[TenantType]:
@@ -46,7 +46,7 @@ class Query:
             .limit(page_size)
             .all()
         )
-        return customers
+        return customers  # type: ignore
 
     @strawberry.field
     def audit_logs(
@@ -64,4 +64,4 @@ class Query:
             .limit(page_size)
             .all()
         )
-        return logs
+        return logs  # type: ignore

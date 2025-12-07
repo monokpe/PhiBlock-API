@@ -63,8 +63,12 @@ def get_analytics_stats(
         func.sum(models.TokenUsage.estimated_cost_usd).label("total_cost"),
     ).first()
 
-    total_tokens = token_stats.total_tokens or 0
-    estimated_cost = float(token_stats.total_cost or 0.0)
+    if not token_stats:
+        total_tokens = 0
+        estimated_cost = 0.0
+    else:
+        total_tokens = token_stats.total_tokens or 0
+        estimated_cost = float(token_stats.total_cost or 0.0)
 
     injection_count = logs_query.filter(models.AuditLog.injection_score > 0.5).count()
 

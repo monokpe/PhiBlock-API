@@ -15,18 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 class ComplianceEngine:
-    """
-    Evaluates content against compliance rules.
-    """
-
     def __init__(self):
         self.rules: Dict[str, List[ComplianceRule]] = {}
         self.frameworks: List[str] = []
 
     def load_rules(self, rules: List[ComplianceRule]) -> None:
-        """
-        Load a set of compliance rules.
-        """
         for rule in rules:
             if rule.framework not in self.rules:
                 self.rules[rule.framework] = []
@@ -81,9 +74,6 @@ class ComplianceEngine:
         detected_entities: List[Dict],
         rule: ComplianceRule,
     ) -> List[ComplianceViolation]:
-        """
-        Check if a specific rule is violated in the text.
-        """
         violations = []
 
         if rule.entity_types:
