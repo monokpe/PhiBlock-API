@@ -132,3 +132,25 @@ new_venv/
 *.db
 test_result*.txt
 .env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local secrets (additional patterns)
+.env.*
+!.env.example
+
+# Locust reports
+locust_*.csv
+locust_report*.html
+
+# Coverage artifacts (additional)
+.coverage
+htmlcov/
