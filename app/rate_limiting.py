@@ -1,3 +1,10 @@
+"""
+Rate limiting module using Redis with fallback.
+
+Provides a RateLimiter dependency for FastAPI that tracks usage via Redis
+or an in-memory fallback if Redis is unavailable.
+"""
+
 import os
 import threading
 from datetime import datetime, timezone
@@ -10,10 +17,11 @@ from . import models
 from .auth import get_current_user
 
 # Connect to Redis (lazy-ish, but we handle connection errors at runtime)
-redis_host = "localhost" if os.environ.get("TESTING") else "redis"
+# Connect to Redis (lazy-ish, but we handle connection errors at runtime)
+redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 redis_client: Optional[redis.Redis]
 try:
-    redis_client = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
+    redis_client = redis.from_url(redis_url, decode_responses=True)
 except Exception:
     redis_client = None
 
@@ -22,7 +30,19 @@ _fallback_counters: Dict[str, Tuple[Optional[str], int]] = {}
 
 
 class RateLimiter:
+    """
+    Rate limiter dependency.
+
+    Enforces a strict request limit per user per minute. Use with `Depends()`.
+    """
+
     def __init__(self, requests_per_minute: int):
+        """
+        Initialize the rate limiter.
+
+        Args:
+            requests_per_minute: Number of allowed requests per minute window.
+        """
         self.requests_per_minute = requests_per_minute
 
     def _handle_fallback(self, key: str, rate_limit: int):
@@ -41,6 +61,15 @@ class RateLimiter:
             return True
 
     def __call__(self, user: models.APIKey = Depends(get_current_user)):
+        """
+        Check if the request allows proceeding.
+
+        Args:
+            user: The authenticated user (injected dependency).
+
+        Raises:
+            HTTPException: If the rate limit is exceeded.
+        """
         rate_limit = int(user.rate_limit) if user.rate_limit else self.requests_per_minute
         key = f"rate_limit:{user.id}"
 

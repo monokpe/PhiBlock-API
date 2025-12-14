@@ -156,4 +156,12 @@ locust_report*.html
 htmlcov/
 
 # Documentation
+# Documentation
 docs/
+# Expose public documentation
+!docs/BUBBLE_INTEGRATION.md
+!docs/LANGCHAIN_INTEGRATION.md
+!docs/ZAPIER_INTEGRATION.md
+!docs/bubble_openapi.json
+!docs/zapier_spec.json
+!docs/PHASE_2_ARCHITECTURE.md

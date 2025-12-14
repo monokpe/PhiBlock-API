@@ -24,8 +24,12 @@ RUN python -m spacy download en_core_web_sm
 # Copy the rest of the application
 COPY . .
 
-# Expose port
-EXPOSE 8000
+# Copy entrypoint script
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
 
-# Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Entrypoint to run migrations
+ENTRYPOINT ["./entrypoint.sh"]
+
+# Command to run the application with Gunicorn
+CMD ["gunicorn", "app.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]

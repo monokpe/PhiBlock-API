@@ -1,6 +1,7 @@
 # -- Core Web Framework --
 fastapi
 uvicorn[standard]
+gunicorn
 python-dotenv
 
 # -- Database --
