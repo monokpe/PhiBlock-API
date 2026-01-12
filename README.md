@@ -542,8 +542,8 @@ phiblock/
 
 - [x] PIPEDA compliance framework
 - [x] LangChain plugin
-- [x] Bubble.io connector
-- [x] Zapier integration
+- [ ] Bubble.io connector (Planned)
+- [ ] Zapier integration (Planned)
 
 ### ✅ Completed (Phase 4.1 - Performance Optimization)
 
