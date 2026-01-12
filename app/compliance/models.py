@@ -122,3 +122,4 @@ class ComplianceFramework(str, Enum):
     SOC2 = "SOC2"
     CCPA = "CCPA"
     PIPEDA = "PIPEDA"
+    SECURITY = "Security"

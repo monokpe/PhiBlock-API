@@ -1,4 +1,5 @@
 import hashlib
+import json
 import time
 import uuid
 from typing import Any, Dict, Optional
@@ -6,6 +7,8 @@ from typing import Any, Dict, Optional
 from sqlalchemy.orm import Session
 
 from . import models
+from .audit_encryption import get_audit_encryptor
+from .token_tracking import get_token_logger
 
 
 async def log_request(
@@ -21,6 +24,7 @@ async def log_request(
 ):
     """
     Logs a request and its analysis outcome to the audit_logs table.
+    Includes encrypted storage for sensitive prompts and token usage tracking.
     """
     latency_ms = int((time.time() - start_time) * 1000)
     prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()
@@ -28,9 +32,37 @@ async def log_request(
     analysis_result = analysis_result or {}
     detections = analysis_result.get("detections", {})
     entities_detected = detections.get("entities")
+    sanitized_prompt = analysis_result.get("sanitized_prompt", "")
+    request_id = analysis_result.get("request_id")
 
+    # 1. Encrypt sanitized prompt if encryption is enabled
+    encryptor = get_audit_encryptor()
+    redacted_prompt_encrypted = None
+    if sanitized_prompt and encryptor.enabled:
+        encrypted_meta = encryptor.encrypt({"prompt": sanitized_prompt})
+        if encrypted_meta:
+            redacted_prompt_encrypted = json.dumps(encrypted_meta).encode("utf-8")
+
+    # 2. Log token usage (persists to token_usage table)
+    try:
+        token_logger = get_token_logger(db)
+        token_logger.log_token_usage(
+            api_key_id=api_key.id,
+            tenant_id=api_key.tenant_id,
+            endpoint=endpoint,
+            input_text=prompt,
+            output_text=sanitized_prompt,
+            request_id=request_id,
+            metadata={"status_code": status_code, "http_method": http_method},
+        )
+    except Exception as e:
+        # Don't fail the whole request if token logging fails, but log it
+        import logging
+        logging.getLogger(__name__).error(f"Failed to log token usage: {e}")
+
+    # 3. Create audit log entry
     audit_log = models.AuditLog(
-        request_id=analysis_result.get("request_id", uuid.uuid4()),
+        request_id=request_id or uuid.uuid4(),
         tenant_id=api_key.tenant_id,
         api_key_id=api_key.id,
         endpoint=endpoint,
@@ -42,6 +74,7 @@ async def log_request(
         entities_detected=entities_detected,
         injection_score=injection_score,
         compliance_status=analysis_result.get("status", "completed"),
+        redacted_prompt_encrypted=redacted_prompt_encrypted,
     )
     db.add(audit_log)
     db.commit()

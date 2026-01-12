@@ -1,0 +1,11 @@
+framework: Security
+
+rules:
+  - id: sec_001
+    name: "Prompt Injection Detection"
+    description: "Detects and blocks prompt injection or jailbreak attempts"
+    severity: critical
+    action: block
+    entity_types:
+      - PROMPT_INJECTION
+    remediation: "Block malicious prompts and implement safety guardrails on the LLM side"

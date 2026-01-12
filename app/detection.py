@@ -8,6 +8,7 @@ REGEX_PATTERNS = {
     "CREDIT_CARD": r"\b(?:\d[ -]*?){13,16}\b",
     "SSN": r"\b\d{3}-\d{2}-\d{4}\b",
     "PHONE": r"\b(?:\+?1[ -]?)?\(?\d{3}\)?[ -]?\d{3}[ -]?\d{4}\b",
+    "EMAIL": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
 }
 
 

@@ -63,18 +63,16 @@ def get_analytics_stats(
         func.sum(models.TokenUsage.estimated_cost_usd).label("total_cost"),
     ).first()
 
-    if not token_stats:
-        total_tokens = 0
-        estimated_cost = 0.0
-    else:
-        total_tokens = token_stats.total_tokens or 0
-        estimated_cost = float(token_stats.total_cost or 0.0)
+    total_tokens = getattr(token_stats, "total_tokens", 0) or 0
+    estimated_cost = float(getattr(token_stats, "total_cost", 0.0) or 0.0)
 
     injection_count = logs_query.filter(models.AuditLog.injection_score > 0.5).count()
 
     pii_count = logs_query.filter(
-        models.AuditLog.entities_detected.isnot(None), models.AuditLog.entities_detected != "[]"
-    ).count()
+        models.AuditLog.entities_detected.isnot(None)
+    ).all()
+    # Filter non-empty lists in Python to avoid SQL JSON comparison issues across dialects
+    pii_count = len([log for log in pii_count if log.entities_detected and len(log.entities_detected) > 0])
 
     avg_latency = logs_query.with_entities(func.avg(models.AuditLog.latency_ms)).scalar() or 0.0
 

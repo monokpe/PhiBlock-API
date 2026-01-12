@@ -24,9 +24,9 @@ RUN python -m spacy download en_core_web_sm
 # Copy the rest of the application
 COPY . .
 
-# Copy entrypoint script
+# Copy entrypoint script and fix line endings (Windows CRLF -> Unix LF)
 COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 # Entrypoint to run migrations
 ENTRYPOINT ["./entrypoint.sh"]

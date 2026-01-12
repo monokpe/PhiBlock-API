@@ -53,3 +53,4 @@ httpx
 pytest
 pytest-asyncio
 locust
+psutil

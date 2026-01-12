@@ -8,12 +8,11 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/phiblock
       - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
       - CACHE_ENABLED=true
     depends_on:
       - db
       - redis
-    volumes:
-      - .:/app
 
   worker:
     build: .
@@ -21,6 +20,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/phiblock
       - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
     depends_on:
       - db
       - redis

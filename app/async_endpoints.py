@@ -22,7 +22,7 @@ from pydantic import BaseModel, Field
 
 from workers.celery_app import (
     analyze_complete_async,
-    app,
+    celery_app as app,
     check_compliance_async,
     detect_pii_async,
     get_task_result,
@@ -215,6 +215,10 @@ class CompleteAnalysisResponse(BaseModel):
     risk: Dict[str, Any]
 
 
+from . import auth, models
+from .database import get_db
+from fastapi import Depends
+
 @router.post(
     "/analyze/async",
     response_model=AsyncTaskResponse,
@@ -222,7 +226,9 @@ class CompleteAnalysisResponse(BaseModel):
     description="Submit text for asynchronous analysis (PII + Compliance + Risk Scoring)",
 )
 async def submit_analysis_task(
-    request: AsyncAnalysisRequest, background_tasks: BackgroundTasks
+    request: AsyncAnalysisRequest,
+    background_tasks: BackgroundTasks,
+    current_user: models.APIKey = Depends(auth.get_current_user),
 ) -> AsyncTaskResponse:
     """
     Submit text for complete async analysis.
@@ -232,12 +238,10 @@ async def submit_analysis_task(
     Args:
         request: Analysis request with text and options
         background_tasks: FastAPI background tasks for webhook notifications
-
-    Returns:
-        Task ID and status
+        current_user: Authenticated API key
     """
     try:
-        logger.info(f"[submit_analysis_task] Submitting analysis for {len(request.text)} chars")
+        logger.info(f"[submit_analysis_task] Submitting analysis for {len(request.text)} chars (tenant={current_user.tenant_id})")
 
         # Submit task to Celery
         task = analyze_complete_async.delay(
@@ -245,6 +249,8 @@ async def submit_analysis_task(
             frameworks=request.frameworks,
             webhook_url=request.webhook_url,
             sign_payload=getattr(request, "sign_payload", False),
+            tenant_id=str(current_user.tenant_id),
+            api_key_id=str(current_user.id),
         )
 
         # If webhook URL is provided, schedule notification check

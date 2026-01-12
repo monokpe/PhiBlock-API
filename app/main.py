@@ -4,7 +4,9 @@ import time
 import uuid
 
 import sentry_sdk
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from strawberry.fastapi import GraphQLRouter
@@ -17,6 +19,8 @@ from . import models
 from .analytics import router as analytics_router
 from .async_endpoints import router as async_router
 from .cache_service import cache_result, get_cached_result
+from .compliance import get_compliance_engine, get_redaction_service, load_compliance_rules
+from .compliance.models import ComplianceAction
 from .database import get_db
 from .detection import detect_pii
 from .graphql.context import get_context
@@ -54,6 +58,20 @@ app = FastAPI(
     description="API for real-time content filtering and compliance.",
     version="0.1.0",
 )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Custom handler for validation errors to provide better feedback for malformed JSON.
+    """
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "detail": "Invalid Request Format",
+            "message": "The JSON payload is malformed. This often happens if you use unescaped double quotes inside a string (e.g., \"\"text\"\"). Please use single quotes or escape your double quotes (e.g., \\\"text\\\").",
+            "errors": exc.errors(),
+        },
+    )
 
 app.add_middleware(TenantContextMiddleware)
 
@@ -103,7 +121,7 @@ async def analyze_prompt(
     start_time = time.time()
     request_id = uuid.uuid4()
 
-    tenant_id = get_current_tenant()
+    tenant_id = current_user.tenant_id
     if tenant_id:
         cached_result = get_cached_result(body.prompt, str(tenant_id))
         if cached_result:
@@ -111,8 +129,7 @@ async def analyze_prompt(
             cached_result["cached"] = True
             return cached_result
 
-    entities = detect_pii(body.prompt)
-    pii_found = len(entities) > 0
+    raw_entities = detect_pii(body.prompt)
 
     try:
         injection_score = get_injection_score(body.prompt)
@@ -122,21 +139,72 @@ async def analyze_prompt(
 
     injection_detected = injection_score > 0.5
 
-    sanitized_prompt = body.prompt
-    for entity in sorted(entities, key=lambda e: e["position"]["start"], reverse=True):
-        start = entity["position"]["start"]
-        end = entity["position"]["end"]
-        sanitized_prompt = sanitized_prompt[:start] + f"[{entity['type']}]" + sanitized_prompt[end:]
+    # 1. Normalize and Aggregate Entities
+    # detect_pii returns {"type": ..., "value": ..., "position": {"start": ..., "end": ...}}
+    # compliance engine expects {"type": ..., "value": ..., "start": ..., "end": ...}
+    normalized_entities = []
+    for e in raw_entities:
+        normalized_entities.append({
+            "type": e["type"],
+            "value": e["value"],
+            "start": e["position"]["start"],
+            "end": e["position"]["end"]
+        })
+
+    if injection_detected:
+        normalized_entities.append({
+            "type": "PROMPT_INJECTION",
+            "value": body.prompt,
+            "start": 0,
+            "end": len(body.prompt),
+            "confidence": injection_score
+        })
+
+    # 2. Evaluate Compliance Rules
+    rules = load_compliance_rules()
+    engine = get_compliance_engine()
+    engine.load_rules(rules)
+    
+    # We include our new "Security" framework by default here
+    frameworks = ["Security", "GDPR", "HIPAA", "PCI-DSS"]
+    compliance_result = engine.check_compliance(body.prompt, normalized_entities, frameworks=frameworks)
+
+    # 3. Apply Redaction/Blocking based on Compliance Engine results
+    redaction_service = get_redaction_service()
+    
+    # Identify if we have a BLOCK action
+    should_block = any(v.action == ComplianceAction.BLOCK for v in compliance_result.violations)
+    
+    if should_block:
+        # If blocked, we mask the entire prompt or return a specific message
+        # The design for BLOCK usually means the request is rejected, 
+        # but for sanitized_prompt we can provide the filtered message
+        blocking_violation = next(v for v in compliance_result.violations if v.action == ComplianceAction.BLOCK)
+        sanitized_prompt = f"[FILTERED DUE TO {blocking_violation.rule_name.upper()}]"
+    else:
+        # Otherwise, redact specific entities marked for REDACT
+        sanitized_prompt, _ = redaction_service.redact_text(body.prompt, normalized_entities)
 
     analysis_result = {
-        "request_id": request_id,
+        "request_id": str(request_id),
         "status": "completed",
         "sanitized_prompt": sanitized_prompt,
         "detections": {
-            "pii_found": pii_found,
-            "entities": entities,
+            "pii_found": len(raw_entities) > 0,
+            "entities": raw_entities,
             "injection_detected": injection_detected,
             "injection_score": round(injection_score, 4),
+        },
+        "compliance": {
+            "compliant": compliance_result.compliant,
+            "violations": [
+                {
+                    "rule_name": v.rule_name,
+                    "framework": v.framework,
+                    "severity": v.severity,
+                    "message": v.message
+                } for v in compliance_result.violations
+            ]
         },
         "cached": False,
     }

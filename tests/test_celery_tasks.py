@@ -16,7 +16,7 @@ import pytest  # Added this line
 # Import the Celery app and tasks
 from workers.celery_app import (
     analyze_complete_async,
-    app,
+    celery_app as app,
     check_compliance_async,
     detect_pii_async,
     get_task_result,

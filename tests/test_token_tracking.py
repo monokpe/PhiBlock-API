@@ -275,6 +275,16 @@ class TestTokenUsageLogging:
         assert "endpoint" in result
         assert "timestamp" in result
 
+        # Verify persistence
+        db.add.assert_called_once()
+        args, _ = db.add.call_args
+        token_usage = args[0]
+        from app.models import TokenUsage
+        assert isinstance(token_usage, TokenUsage)
+        assert token_usage.api_key_id == "test-key"
+        assert token_usage.endpoint == "/api/v1/analyze"
+        assert token_usage.total_tokens > 0
+
     def test_log_token_usage_with_output(self):
         """Log token usage with input and output."""
         from unittest.mock import MagicMock

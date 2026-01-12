@@ -50,10 +50,17 @@ class Query:
 
     @strawberry.field
     def audit_logs(
-        self, info, tenant_id: uuid.UUID, page: int = 1, page_size: int = 10
+        self, info, page: int = 1, page_size: int = 10
     ) -> List[AuditLogType]:
-        """List audit logs for a specific tenant."""
+        """List audit logs for the current tenant."""
         db: Session = info.context["db"]
+        tenant_id = info.context.get("tenant_id")
+        
+        if not tenant_id:
+            # Fallback for admin or unauthenticated debugging if allowed, 
+            # but usually we want to enforce isolation.
+            return []
+
         skip = (page - 1) * page_size
 
         logs = (

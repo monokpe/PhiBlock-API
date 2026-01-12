@@ -13,6 +13,7 @@ Features:
 """
 
 import logging
+import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
@@ -176,28 +177,34 @@ class TokenUsageLogger:
 
     def log_token_usage(
         self,
-        api_key_id: str,
+        api_key_id: Any,
         endpoint: str,
         input_text: str,
         output_text: Optional[str] = None,
         model: str = "gpt-3.5-turbo",
         metadata: Optional[Dict] = None,
+        tenant_id: Optional[Any] = None,
+        request_id: Optional[Any] = None,
     ) -> Dict:
         """
-        Log token usage for a request.
+        Log token usage for a request and persist to database.
 
         Args:
             api_key_id: API key ID
-            endpoint: Endpoint path (e.g., "/api/v1/analyze/async")
+            endpoint: Endpoint path (e.g., "/v1/analyze")
             input_text: Input text processed
             output_text: Output text generated (optional)
             model: Model used
             metadata: Additional metadata
+            tenant_id: Tenant ID
+            request_id: Unique request ID
 
         Returns:
             Dictionary with usage statistics
         """
         try:
+            from . import models
+
             input_tokens = self.token_tracker.count_tokens(input_text)
             output_tokens = self.token_tracker.count_tokens(output_text) if output_text else 0
             total_tokens = input_tokens + output_tokens
@@ -205,6 +212,24 @@ class TokenUsageLogger:
             risk_level, warning = self.token_tracker.get_risk_level(total_tokens)
 
             estimated_cost = self.token_tracker.estimate_cost(input_tokens, output_tokens, model)
+
+            # Persist to database
+            token_usage = models.TokenUsage(
+                tenant_id=tenant_id,
+                request_id=request_id or uuid.uuid4(),
+                api_key_id=api_key_id,
+                endpoint=endpoint,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                total_tokens=total_tokens,
+                model=model,
+                estimated_cost_usd=estimated_cost,
+                risk_level=risk_level.value,
+                audit_data=metadata,
+            )
+            self.db.add(token_usage)
+            # Not committing here as this is usually called within a larger transaction
+            # (e.g. log_request will commit at the end)
 
             usage_stats: Dict[str, Any] = {
                 "input_tokens": input_tokens,
@@ -222,9 +247,8 @@ class TokenUsageLogger:
                 usage_stats["metadata"] = metadata
 
             logger.info(
-                f"Token usage logged: endpoint={endpoint}, "
-                f"tokens={total_tokens}, cost=${float(estimated_cost):.4f}, "
-                f"risk={risk_level.value}"
+                f"Token usage persisted: tenant={tenant_id}, endpoint={endpoint}, "
+                f"tokens={total_tokens}, cost=${float(estimated_cost):.4f}"
             )
 
             return usage_stats

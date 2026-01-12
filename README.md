@@ -7,11 +7,11 @@ PhiBlock is a real-time API firewall that filters AI prompts before they reach L
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-green.svg)](https://fastapi.tiangolo.com/)
-[![CI](https://github.com/monokpe/Guardrails/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/monokpe/Guardrails/actions/workflows/ci.yml)
+[![CI](https://github.com/monokpe/PhiBlock-API/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/monokpe/PhiBlock-API/actions/workflows/ci.yml)
 
 ---
 
-## 🎯 Why Guardrails?
+## 🎯 Why PhiBlock-API?
 
 **For Healthcare Startups** - Ensure HIPAA compliance for AI-powered tools
 **For LLM Apps** - Add a security layer to Bubble, Retool, Zapier, and LangChain integrations
@@ -79,8 +79,8 @@ PhiBlock is a real-time API firewall that filters AI prompts before they reach L
 #### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/monokpe/Guardrails
-cd guardrails
+git clone https://github.com/monokpe/PhiBlock-API
+cd PhiBlock-API
 ```
 
 #### 2. Create Virtual Environment
@@ -114,7 +114,7 @@ Edit `.env` with your configuration:
 
 ```env
 # Database
-DATABASE_URL=sqlite:///./guardrails_dev.db
+DATABASE_URL=sqlite:///./PhiBlock-API.db
 
 # Redis (for caching)
 REDIS_URL=redis://localhost:6379/0
@@ -162,13 +162,30 @@ celery -A workers.celery_app beat --loglevel=info
 
 ---
 
-### 🐳 Docker Setup
+### ☁️ AWS EC2 Deployment (Demo)
 
-```bash
-docker-compose up --build
+For a quick, budget-friendly demo on an AWS EC2 instance (e.g., `t3.medium`), use the automated deployment scripts:
+
+#### 1. Prepare for Deployment
+- Ensure you have your EC2 **Public IP** and **SSH Key (.pem file)**.
+- Open **Port 8000** in your EC2 Security Group (Inbound Rules).
+
+#### 2. Run the Push Script (on Windows)
+Open PowerShell in the project root and run:
+
+```powershell
+.\scripts\push_to_ec2.ps1 -EC2_IP "3.123.45.67" -SSH_KEY_PATH "C:\path\to\your-key.pem"
 ```
 
-Access the API at `http://localhost:8000`
+This script will:
+- 📦 Archive the project.
+- 📤 Upload code to your EC2.
+- 🛠️ Install Docker/Docker Compose (if missing).
+- 🚀 Start the application.
+
+#### 3. Access Your App
+Once finished, visit your API docs at:
+`http://<your-ec2-ip>:8000/docs`
 
 ---
 
@@ -212,7 +229,7 @@ query {
 
 ### Analytics Dashboard
 
-- **URL**: http://localhost:8000/dashboard
+- **URL**: http://localhost:8000/dashboard/
 - **Access**: Requires valid Tenant API Key
 
 ---
@@ -226,7 +243,7 @@ curl -X POST http://localhost:8000/v1/tenants \
   -H "Content-Type: application/json" \
   -d '{
     "name": "My Company",
-    "email": "admin@mycompany.com"
+    "plan": "pro"
   }'
 ```
 
@@ -236,7 +253,8 @@ Response:
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "name": "My Company",
-  "api_key": "gd_live_abc123xyz..."
+  "slug": "my-company",
+  "plan": "pro"
 }
 ```
 
@@ -245,7 +263,7 @@ Response:
 ```bash
 curl -X POST http://localhost:8000/v1/analyze \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer gd_live_abc123xyz..." \
+  -H "X-API-Key: YOUR_API_KEY_HERE" \
   -d '{
     "prompt": "My name is John Doe and my SSN is 123-45-6789"
   }'
@@ -284,11 +302,11 @@ Response:
 ```python
 import requests
 
-API_KEY = "gd_live_abc123xyz..."
+API_KEY = "your-api-key-here"
 BASE_URL = "http://localhost:8000"
 
 headers = {
-    "Authorization": f"Bearer {API_KEY}",
+    "X-API-Key": API_KEY,
     "Content-Type": "application/json"
 }
 
@@ -366,7 +384,7 @@ radon cc app/ workers/ -a
 | **Billing**    | Stripe 8.1+                          |
 | **Monitoring** | Sentry 1.40+                         |
 | **Migrations** | Alembic                              |
-| **Frontend**   | React + Tailwind CSS                 |
+| **Frontend**   | HTML/JS + Chart.js                   |
 
 ### System Design
 
@@ -378,7 +396,7 @@ radon cc app/ workers/ -a
        │ HTTPS + API Key
        ▼
 ┌─────────────────────────────────────┐
-│      Guardrails API (FastAPI)       │
+│       PhiBlock API (FastAPI)        │
 ├─────────────────────────────────────┤
 │  Rate Limiter → Auth → Middleware   │
 └──────┬──────────────────────┬───────┘
@@ -414,7 +432,7 @@ radon cc app/ workers/ -a
 ## 📂 Project Structure
 
 ```
-guardrails/
+phiblock/
 ├── app/
 │   ├── main.py              # FastAPI application entry point
 │   ├── database.py          # SQLAlchemy setup
@@ -437,7 +455,7 @@ guardrails/
 │   │       ├── gdpr.py
 │   │       └── pci_dss.py
 │   ├── graphql/             # GraphQL schema & resolvers
-│   └── static/              # Analytics dashboard (React)
+│   └── static/              # Analytics dashboard (HTML/JS)
 ├── workers/
 │   ├── celery_app.py        # Celery configuration
 │   └── detection.py         # Async injection detection
@@ -492,7 +510,7 @@ guardrails/
 
 | Variable            | Description                  | Default                         | Required |
 | ------------------- | ---------------------------- | ------------------------------- | -------- |
-| `DATABASE_URL`      | PostgreSQL connection string | `sqlite:///./guardrails_dev.db` | No       |
+| `DATABASE_URL`      | PostgreSQL connection string | `sqlite:///./phiblock_dev.db`   | No       |
 | `REDIS_URL`         | Redis connection string      | `redis://localhost:6379/0`      | No       |
 | `CACHE_ENABLED`     | Enable request caching       | `true`                          | No       |
 | `SECRET_KEY`        | JWT signing key              | -                               | **Yes**  |

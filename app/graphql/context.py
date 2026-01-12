@@ -35,7 +35,7 @@ async def get_context(
             current_user.last_used_at = datetime.datetime.utcnow()
             db.commit()
 
-    tenant_id = get_current_tenant()
+    tenant_id = current_user.tenant_id if current_user else get_current_tenant()
 
     return {
         "db": db,

@@ -69,7 +69,7 @@ def get_api_key_from_db(db: Session, key: str) -> models.APIKey | None:
     return None
 
 
-def get_current_user(api_key: str = Depends(api_key_header), db: Session = Depends(get_db)):
+async def get_current_user(api_key: str = Depends(api_key_header), db: Session = Depends(get_db)):
     if not api_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
