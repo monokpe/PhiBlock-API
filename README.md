@@ -4,6 +4,9 @@
 
 PhiBlock is a real-time API firewall that filters AI prompts before they reach LLMs like OpenAI or Claude. It detects PII, blocks prompt injection attacks, redacts sensitive content, and enforces compliance rules for HIPAA, GDPR, and PCI-DSS.
 
+
+![PhiBlock Analytics Dashboard](docs/assets/dashboard_preview.png)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-green.svg)](https://fastapi.tiangolo.com/)
@@ -24,6 +27,17 @@ PhiBlock is a real-time API firewall that filters AI prompts before they reach L
 - ✅ **Regulatory Compliance** - Enforce HIPAA, GDPR, and PCI-DSS rules with contextual analysis
 - ✅ **Multi-Tenant Security** - Strict data isolation for SaaS applications
 - ✅ **Usage Tracking & Billing** - Token-level metering with Stripe integration
+
+### 🌍 Real-World Scenarios
+
+#### 🏥 Healthcare: HIPAA-Compliant Chatbots
+Ensure that patient data (PHI) never leaves your infrastructure. PhiBlock intercepts chat messages, redacting names, conditions, and SSNs before they are sent to GPT-4, ensuring full HIPAA compliance alongside your BAA.
+
+#### 💸 Fintech: Secure Customer Support
+Prevent sensitive financial data from leaking into training datasets. Automatically block prompts containing credit card numbers (PCI-DSS) or account details while allowing general support queries to pass through.
+
+#### 🛡️ Enterprise: Internal AI Tools
+Protect your company IP. Detect and block employees from pasting proprietary code or internal memos into public LLMs, while maintaining an audit trail of all AI usage.
 
 ---
 
@@ -68,101 +82,69 @@ PhiBlock is a real-time API firewall that filters AI prompts before they reach L
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### 🐳 Docker Compose (Recommended for Production)
 
-- **Python 3.12+**
-- **Redis** (optional, for caching and rate limiting)
-- **PostgreSQL** (optional, defaults to SQLite for development)
-
-### Local Setup
-
-#### 1. Clone the Repository
+The fastest way to get up and running with a production-like environment (API, Redis, Worker).
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/monokpe/PhiBlock-API
 cd PhiBlock-API
-```
 
-#### 2. Create Virtual Environment
-
-```bash
-python -m venv venv
-
-# Activate on Linux/Mac:
-source venv/bin/activate
-
-# Activate on Windows:
-venv\Scripts\activate
-```
-
-#### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-
-# Download spaCy language model
-python -m spacy download en_core_web_sm
-```
-
-#### 4. Configure Environment
-
-```bash
+# 2. Configure Environment
 cp .env.example .env
-```
+# Edit .env to set your secure keys (SECRET_KEY, API_KEY_SALT)
 
-Edit `.env` with your configuration:
-
-```env
-# Database
-DATABASE_URL=sqlite:///./PhiBlock-API.db
-
-# Redis (for caching)
-REDIS_URL=redis://localhost:6379/0
-CACHE_ENABLED=true
-
-# Security
-SECRET_KEY=your-secret-key-change-this
-API_KEY_SALT=your-salt-change-this
-
-# Stripe (optional)
-STRIPE_API_KEY=sk_test_...
-STRIPE_PRICE_ID=price_...
-
-# Sentry (optional)
-SENTRY_DSN=https://...@sentry.io/...
-
-# Celery
-CELERY_BROKER_URL=redis://localhost:6379/0
-CELERY_RESULT_BACKEND=redis://localhost:6379/0
-```
-
-#### 5. Run Database Migrations
-
-```bash
-alembic upgrade head
-```
-
-#### 6. Start the Server
-
-```bash
-uvicorn app.main:app --reload
+# 3. Start Services
+docker-compose up -d --build
 ```
 
 Access the API at `http://localhost:8000`
 
-#### 7. Start Celery Worker (Optional, for billing)
+### 💻 Development Setup
 
+If you prefer to run services individually for development:
+
+#### 1. Prerequisites
+- **Python 3.12+**
+- **Redis** (optional, for caching and rate limiting)
+
+#### 2. Install Dependencies
 ```bash
-# In a separate terminal
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
+
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+```
+
+#### 3. Configuration
+```bash
+cp .env.example .env
+```
+Ensure `REDIS_URL` points to your local Redis instance if enabled.
+
+#### 4. Run Migrations & Start Server
+```bash
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+#### 5. Start Workers (Optional)
+```bash
+# Terminal 2: Worker
 celery -A workers.celery_app worker --loglevel=info
 
-# Start periodic tasks (beat)
+# Terminal 3: Beat
 celery -A workers.celery_app beat --loglevel=info
 ```
 
 ---
 
-### ☁️ AWS EC2 Deployment (Demo)
+### ☁️ AWS EC2 Production Deployment
 
 For a quick, budget-friendly demo on an AWS EC2 instance (e.g., `t3.medium`), use the automated deployment scripts:
 
@@ -432,7 +414,7 @@ radon cc app/ workers/ -a
 ## 📂 Project Structure
 
 ```
-phiblock/
+PhiBlock/
 ├── app/
 │   ├── main.py              # FastAPI application entry point
 │   ├── database.py          # SQLAlchemy setup
@@ -472,25 +454,14 @@ phiblock/
 
 ## 🔐 Security Best Practices
 
-### Production Deployment Checklist
-
-- [ ] Change `SECRET_KEY` and `API_KEY_SALT` to cryptographically secure values
-- [ ] Use PostgreSQL instead of SQLite
-- [ ] Enable HTTPS/TLS for all endpoints
-- [ ] Restrict CORS origins to your application domains
-- [ ] Set `DEBUG=false` in environment variables
-- [ ] Use environment-specific Sentry DSNs
-- [ ] Rotate API keys periodically
-- [ ] Enable audit encryption for sensitive logs
-- [ ] Set up firewall rules (allow only port 443/80)
-- [ ] Configure Redis authentication
-- [ ] Review and adjust rate limits per tenant tier
-
 ### Webhook Security
 
 - HMAC-SHA256 signature validation
 - Replay attack prevention (timestamp validation)
 - Configurable secrets per tenant
+
+> [!NOTE]
+> For a comprehensive production deployment checklist, please refer to our internal deployment documentation.
 
 ---
 
@@ -526,43 +497,13 @@ phiblock/
 
 ## 🗺️ Roadmap
 
-### ✅ Completed (Phase 1-3)
+### 🏆 Key Milestones Delivered
 
-- [x] Core PII detection
-- [x] Prompt injection classifier
-- [x] Multi-tenant architecture
-- [x] GraphQL API
-- [x] Compliance engine (HIPAA/GDPR/PCI-DSS)
-- [x] Stripe billing integration
-- [x] Sentry monitoring
-- [x] Analytics dashboard
-- [x] Enhanced redaction (multiple strategies: partial masking, format preservation, hashing)
-
-### ✅ Completed (Phase 4 - Integrations)
-
-- [x] PIPEDA compliance framework
-- [x] LangChain plugin
-- [ ] Bubble.io connector (Planned)
-- [ ] Zapier integration (Planned)
-
-### ✅ Completed (Phase 4.1 - Performance Optimization)
-
-- [x] Database composite indexes for tenant queries
-- [x] Optimized analytics query performance
-
-### ✅ Completed (Phase 5.1 - Billing & Metering)
-
-- [x] Stripe usage reporting worker
-- [x] Token usage aggregation and sync
-- [x] Automated billing synchronization
-
-### ✅ Completed (Phase 5.2 - Code Quality Infrastructure)
-
-- [x] Comprehensive CI/CD pipeline (black, isort, flake8, mypy, bandit, radon)
-- [x] Local testing script (`scripts/check_ci.ps1`)
-- [x] Code complexity analysis and thresholds
-- [x] Security scanning with bandit
-- [x] Type checking with mypy (gradual adoption)
+- **Core Security**: PII detection (spaCy), Prompt injection classifier (Transformers), and Multi-tenant architecture.
+- **Compliance**: Full support for HIPAA, GDPR, PCI-DSS, and PIPEDA frameworks.
+- **Integrations**: LangChain plugin, Stripe metered billing, and Sentry monitoring.
+- **Performance**: Optimized database indexes, request deduplication (Redis), and async celery workers.
+- **Quality Assurance**: Comprehensive CI/CD (black, isort, mypy, bandit) and 90%+ test coverage.
 
 ### 📝 Planned
 
@@ -603,7 +544,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Documentation**: Check `/docs` folder for detailed guides
 - **Issues**: Open a GitHub issue for bugs or feature requests
-- **Email**: onokpejames@gmail.com
+- **Email**: [onokpejames@gmail.com](mailto:onokpejames@gmail.com)
 
 ---
 
