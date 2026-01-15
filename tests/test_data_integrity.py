@@ -6,17 +6,14 @@ and compliance with data retention policies.
 """
 
 import hashlib
-import json
-import time
 from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.audit_encryption import AuditEncryptor, get_audit_encryptor
 from app.auth import create_api_key
-from app.database import get_db
+from app.audit_encryption import AuditEncryptor
 from app.models import AuditLog, Base, Customer, Tenant, TokenUsage
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test_data_integrity.db"
@@ -91,7 +88,7 @@ class TestAuditLogIntegrity:
         )
         db_session.add(audit)
         db_session.commit()
-        original_id = audit.id
+        audit.id
 
         # Attempt to modify
         audit.prompt_hash = "tampered_hash"
@@ -107,8 +104,6 @@ class TestAuditLogIntegrity:
 
     def test_audit_log_timestamp_accuracy(self, db_session, test_tenant):
         """Verify timestamps are accurate and in correct timezone."""
-        before = datetime.now(timezone.utc)
-
         audit = AuditLog(
             tenant_id=test_tenant["tenant"].id,
             api_key_id=test_tenant["api_key_obj"].id,
@@ -123,9 +118,7 @@ class TestAuditLogIntegrity:
         db_session.commit()
         db_session.refresh(audit)
 
-        after = datetime.now(timezone.utc)
-
-        # Timestamp should be between before and after
+        # Timestamp should be present
         # Note: SQLite stores as string, may need conversion
         assert audit.created_at is not None
 
@@ -302,9 +295,9 @@ class TestDataRetention:
         retention_date = datetime.now(timezone.utc) - timedelta(days=90)
         old_logs = db_session.query(AuditLog).filter(AuditLog.created_at < retention_date).all()
 
-        # Should find the old log
-        # Note: This may not work with SQLite's datetime handling
+        # Should find the old log (test may not work with SQLite's datetime handling)
         # In production with Postgres, this would work correctly
+        assert isinstance(old_logs, list)
 
     def test_retention_policy_respects_tenant(self, db_session, test_tenant):
         """Retention cleanup should be tenant-scoped."""
@@ -384,7 +377,7 @@ class TestDataConsistency:
         try:
             db_session.commit()
             # If successful, verify cascading worked
-            remaining_audits = db_session.query(AuditLog).filter_by(tenant_id=tenant.id).count()
+            db_session.query(AuditLog).filter_by(tenant_id=tenant.id).count()
             # Depending on cascade settings, this should be 0
         except Exception:
             # Foreign key constraint prevented deletion

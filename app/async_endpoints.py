@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from workers.celery_app import (
@@ -31,7 +31,7 @@ from workers.celery_app import (
     redact_async,
 )
 
-from . import webhook_security
+from . import auth, models, webhook_security
 from .token_tracking import get_token_tracker
 from .webhooks import WebhookEventType, WebhookPayload, get_webhook_notifier
 
@@ -217,12 +217,6 @@ class CompleteAnalysisResponse(BaseModel):
     risk: Dict[str, Any]
 
 
-from fastapi import Depends
-
-from . import auth, models
-from .database import get_db
-
-
 @router.post(
     "/analyze/async",
     response_model=AsyncTaskResponse,
@@ -246,7 +240,7 @@ async def submit_analysis_task(
     """
     try:
         logger.info(
-            f"[submit_analysis_task] Submitting analysis for {len(request.text)} chars (tenant={current_user.tenant_id})"
+            f"[submit_analysis_task] Submitting analysis task (tenant={current_user.tenant_id})"
         )
 
         # Submit task to Celery

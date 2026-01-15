@@ -5,8 +5,6 @@ Uses hypothesis to generate random inputs and verify invariants.
 Discovers edge cases that manual testing might miss.
 """
 
-import json
-
 import pytest
 from fastapi.testclient import TestClient
 from hypothesis import given, settings
@@ -158,7 +156,6 @@ class TestPIIDetectionFuzzing:
 
             # Value should match substring
             if start < len(prompt) and end <= len(prompt):
-                extracted = prompt[start:end]
                 # Value might be normalized, so just check it's not empty
                 assert len(entity["value"]) > 0
 
@@ -288,7 +285,7 @@ class TestEncryptionFuzzing:
                 # Should match original
                 assert decrypted == data
 
-        except (TypeError, ValueError) as e:
+        except (TypeError, ValueError):
             # Some data might not be JSON serializable
             # This is expected and acceptable
             pass

@@ -5,8 +5,6 @@ Verifies that GDPR, HIPAA, and PCI-DSS compliance rules are correctly implemente
 Tests detection accuracy, redaction behavior, and framework-specific requirements.
 """
 
-import pytest
-
 from app.compliance import get_compliance_engine, get_redaction_service, load_compliance_rules
 from app.compliance.models import ComplianceAction
 from app.detection import detect_pii
@@ -99,7 +97,7 @@ class TestGDPRCompliance:
         engine = get_compliance_engine()
         engine.load_rules(rules)
 
-        result = engine.check_compliance(prompt, normalized_entities, frameworks=["GDPR"])
+        engine.check_compliance(prompt, normalized_entities, frameworks=["GDPR"])
 
         # Should detect IP_ADDRESS and potentially LOCATION
         entity_types = [e["type"] for e in entities]
@@ -254,7 +252,7 @@ class TestPCIDSSCompliance:
         invalid_card = "4532-1488-0343-6468"
 
         valid_entities = detect_pii(f"Card: {valid_card}")
-        invalid_entities = detect_pii(f"Card: {invalid_card}")
+        detect_pii(f"Card: {invalid_card}")
 
         # Valid card should be detected
         valid_types = [e["type"] for e in valid_entities]

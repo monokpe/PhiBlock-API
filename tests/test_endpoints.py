@@ -80,9 +80,7 @@ def test_analyze_endpoint_success(client, db_session):
 
     audit = db_session.query(AuditLog).filter_by(api_key_id=customer.api_keys[0].id).first()
     assert audit is not None
-    assert (
-        audit.redacted_prompt_encrypted is not None
-    )  # Should be populated even if encryption is "disabled" via missing env (as it tries to encrypt and it might be enabled by default in some test setups)
+    assert audit.redacted_prompt_encrypted is not None
 
     # If AUDIT_ENCRYPTION_SECRET is not set, encrypt() returns None,
     # but let's see if we can check it.

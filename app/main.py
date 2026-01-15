@@ -25,7 +25,7 @@ from .database import get_db
 from .detection import detect_pii
 from .graphql.context import get_context
 from .graphql.schema import schema
-from .middleware import TenantContextMiddleware, get_current_tenant
+from .middleware import TenantContextMiddleware
 from .performance_monitoring import router as performance_router
 from .rate_limiting import RateLimiter
 from .security import register_security
@@ -69,7 +69,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "detail": "Invalid Request Format",
-            "message": 'The JSON payload is malformed. This often happens if you use unescaped double quotes inside a string (e.g., ""text""). Please use single quotes or escape your double quotes (e.g., \\"text\\").',
+            "message": "The JSON payload is malformed. Use escaped quotes or single quotes.",
             "errors": exc.errors(),
         },
     )
