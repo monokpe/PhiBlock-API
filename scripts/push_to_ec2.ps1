@@ -4,10 +4,10 @@
 param (
     [Parameter(Mandatory=$true)]
     [string]$EC2_IP,
-    
+
     [Parameter(Mandatory=$true)]
     [string]$SSH_KEY_PATH,
-    
+
     [string]$EC2_USER = "ec2-user"
 )
 
@@ -59,4 +59,3 @@ if (Test-Path $ZipFile) { Remove-Item $ZipFile }
 
 Write-Host "`n✨ Done! Your app should be live soon." -ForegroundColor Green
 Write-Host "🔗 Check: http://${EC2_IP}:8000/docs" -ForegroundColor Cyan
-

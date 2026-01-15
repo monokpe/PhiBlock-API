@@ -20,9 +20,9 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from workers.celery_app import analyze_complete_async
+from workers.celery_app import celery_app as app
 from workers.celery_app import (
-    analyze_complete_async,
-    celery_app as app,
     check_compliance_async,
     detect_pii_async,
     get_task_result,
@@ -215,9 +215,10 @@ class CompleteAnalysisResponse(BaseModel):
     risk: Dict[str, Any]
 
 
+from fastapi import Depends
+
 from . import auth, models
 from .database import get_db
-from fastapi import Depends
 
 
 @router.post(

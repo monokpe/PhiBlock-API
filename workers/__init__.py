@@ -22,9 +22,9 @@ Usage:
     result = task.get()
 """
 
+from workers.celery_app import analyze_complete_async
+from workers.celery_app import celery_app as app
 from workers.celery_app import (
-    analyze_complete_async,
-    celery_app as app,
     check_compliance_async,
     detect_pii_async,
     get_task_result,

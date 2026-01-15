@@ -1,3 +1,25 @@
+import logging
+import sys
+from pathlib import Path
+
+# Ensure app is in path
+sys.path.append(str(Path(__file__).parent.parent))
+
+from app import auth, models
+from app.database import SessionLocal
+
+logger = logging.getLogger(__name__)
+
+
+def setup_load_test_data():
+    """Setup load testing data."""
+    db = SessionLocal()
+
+    try:
+        # Create a test tenant
+        tenant_name = "load-test-tenant"
+        tenant = db.query(models.Tenant).filter(models.Tenant.name == tenant_name).first()
+
         if not tenant:
             logger.info(f"Creating tenant: {tenant_name}")
             tenant = models.Tenant(name=tenant_name, slug="load-test-tenant", plan="enterprise")

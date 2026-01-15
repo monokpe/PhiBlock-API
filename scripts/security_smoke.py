@@ -49,4 +49,3 @@ try:
     out["detect_pii"] = detect_pii("My SSN is 123-45-6789")
 except Exception as e:
     out["detect_pii"] = f"error: {e}"
-

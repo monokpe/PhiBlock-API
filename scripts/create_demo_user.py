@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 
 # Check for database configuration
 if not os.getenv("DATABASE_URL"):
-    logger.warning("DATABASE_URL not found. The script will use the default Postgres URL from app.database.")
+    logger.warning(
+        "DATABASE_URL not found. The script will use the default Postgres URL from app.database."
+    )
 
 
 def create_demo_data(
@@ -45,9 +47,7 @@ def create_demo_data(
         customer = db.query(Customer).filter(Customer.email == customer_email).first()
         if not customer:
             logger.info(f"Creating customer: {customer_name} ({customer_email})")
-            customer = Customer(
-                name=customer_name, email=customer_email, tenant_id=tenant.id
-            )
+            customer = Customer(name=customer_name, email=customer_email, tenant_id=tenant.id)
             db.add(customer)
             db.commit()
             db.refresh(customer)
@@ -82,7 +82,6 @@ if __name__ == "__main__":
     logger.info("🚀 Starting demo user setup...")
     api_key = create_demo_data()
 
-    if api_key:
-    else:
+    if not api_key:
         logger.error("❌ Failed to create demo user.")
         sys.exit(1)

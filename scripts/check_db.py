@@ -1,14 +1,15 @@
 import os
 import sys
+
+import redis
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-import redis
+
 
 def check_database():
     url = os.getenv("DATABASE_URL")
     if not url:
         return False
-
 
     try:
         engine = create_engine(url)
@@ -17,31 +18,35 @@ def check_database():
             result = conn.execute(text("SELECT 1"))
 
             # Check for the tenants table
-            result = conn.execute(text("""
+            result = conn.execute(
+                text(
+                    """
                 SELECT EXISTS (
                     SELECT FROM information_schema.tables
                     WHERE table_name = 'tenants'
                 );
-            """))
+            """
+                )
+            )
             exists = result.scalar()
-            if exists:
-            else:
+            if not exists:
                 return False
 
     except Exception as e:
         return False
     return True
 
+
 def check_redis():
     url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     try:
         r = redis.from_url(url)
-        if r.ping():
-        else:
+        if not r.ping():
             return False
     except Exception as e:
         return False
     return True
+
 
 if __name__ == "__main__":
     db_ok = check_database()

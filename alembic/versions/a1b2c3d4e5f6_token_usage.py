@@ -6,9 +6,10 @@ Create Date: 2025-11-15 12:00:00.000000
 
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a1b2c3d4e5f6_token_usage"
@@ -40,18 +41,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("request_id"),
     )
-    op.create_index(
-        op.f("ix_token_usage_api_key_id"), "token_usage", ["api_key_id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_token_usage_endpoint"), "token_usage", ["endpoint"], unique=False
-    )
-    op.create_index(
-        op.f("ix_token_usage_request_id"), "token_usage", ["request_id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_token_usage_timestamp"), "token_usage", ["timestamp"], unique=False
-    )
+    op.create_index(op.f("ix_token_usage_api_key_id"), "token_usage", ["api_key_id"], unique=False)
+    op.create_index(op.f("ix_token_usage_endpoint"), "token_usage", ["endpoint"], unique=False)
+    op.create_index(op.f("ix_token_usage_request_id"), "token_usage", ["request_id"], unique=False)
+    op.create_index(op.f("ix_token_usage_timestamp"), "token_usage", ["timestamp"], unique=False)
 
 
 def downgrade() -> None:

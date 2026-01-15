@@ -52,7 +52,7 @@ if ! docker buildx version &> /dev/null; then
         aarch64) BUILDX_ARCH="arm64" ;;
         *) BUILDX_ARCH="amd64" ;;
     esac
-    
+
     echo "📥 Downloading Docker Buildx for $BUILDX_ARCH..."
     sudo mkdir -p /usr/libexec/docker/cli-plugins
     sudo curl -sSL "https://github.com/docker/buildx/releases/download/v0.19.3/buildx-v0.19.3.linux-${BUILDX_ARCH}" \
@@ -73,7 +73,7 @@ if [ ! -f "$ZIP_PATH" ]; then
 fi
 
 # Use sudo for removal because docker volumes might have created root-owned files/folders
-if [ -d "$HOME/phiblock_temp" ]; then 
+if [ -d "$HOME/phiblock_temp" ]; then
     echo "clearing old files..."
     sudo rm -rf "$HOME/phiblock_temp"
 fi
@@ -140,4 +140,3 @@ PUBLIC_IP=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254
 echo -e "\n✅ Deployment Complete!"
 echo "🌐 URL: http://$PUBLIC_IP:8000"
 echo "📚 API Docs: http://$PUBLIC_IP:8000/docs"
-

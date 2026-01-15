@@ -1,7 +1,9 @@
-from app.database import SessionLocal
-from app.models import Tenant, Customer, APIKey
 import hashlib
 import secrets
+
+from app.database import SessionLocal
+from app.models import APIKey, Customer, Tenant
+
 
 def create_tenant_b():
     db = SessionLocal()
@@ -18,11 +20,14 @@ def create_tenant_b():
 
     plain_key = secrets.token_hex(16)
     hashed_key = hashlib.sha256(plain_key.encode()).hexdigest()
-    api_key = APIKey(customer_id=customer.id, tenant_id=tenant.id, key_hash=hashed_key, name="Key B")
+    api_key = APIKey(
+        customer_id=customer.id, tenant_id=tenant.id, key_hash=hashed_key, name="Key B"
+    )
     db.add(api_key)
     db.commit()
 
     db.close()
+
 
 if __name__ == "__main__":
     create_tenant_b()

@@ -373,7 +373,7 @@ def analyze_complete_async(
                         tenant_id=tenant_id,
                         endpoint="/v1/analyze/async",
                         input_text=text,
-                        output_text=None,  # In async we don't necessarily have a single output text yet if it's multifaceted
+                        output_text=None,  # In async we don't necessarily have output
                         request_id=self.request.id if hasattr(self, "request") else None,
                         metadata={"type": "async_complete"},
                     )

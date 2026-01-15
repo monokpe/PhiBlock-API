@@ -14,11 +14,7 @@ Components:
 - risk_scoring: Risk assessment and scoring engine
 """
 
-from app.compliance.engine import (
-    ComplianceEngine,
-    get_compliance_engine,
-    reset_compliance_engine,
-)
+from app.compliance.engine import ComplianceEngine, get_compliance_engine, reset_compliance_engine
 from app.compliance.models import (
     ComplianceAction,
     ComplianceFramework,

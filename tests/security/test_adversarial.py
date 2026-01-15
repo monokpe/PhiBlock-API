@@ -6,8 +6,8 @@ and adversarial prompts from public datasets.
 """
 
 import pytest
-from workers.detection import get_injection_score
 
+from workers.detection import get_injection_score
 
 # Adversarial prompts from DAN (Do Anything Now) and JailbreakBench
 JAILBREAK_PROMPTS = [
