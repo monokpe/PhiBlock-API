@@ -7,7 +7,6 @@ def create_tenant_b():
     db = SessionLocal()
     tenant = db.query(Tenant).filter(Tenant.slug == "tenant-b").first()
     if not tenant:
-        print("ERROR: Tenant B not found")
         return
 
     customer = db.query(Customer).filter(Customer.tenant_id == tenant.id).first()
@@ -23,7 +22,6 @@ def create_tenant_b():
     db.add(api_key)
     db.commit()
 
-    print(f"TENANT_B_KEY: {plain_key}")
     db.close()
 
 if __name__ == "__main__":

@@ -12,12 +12,10 @@ def test_pii():
         "My email is \"john.doe@example.com\"",
         "My SSN is 123-45-6789",
     ]
-    
+
     for text in test_cases:
-        print(f"\nTesting: {text}")
         entities = detect_pii(text)
         for ent in entities:
-            print(f"  - Found {ent['type']}: {ent['value']} at {ent['position']}")
 
 if __name__ == "__main__":
     test_pii()

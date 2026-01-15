@@ -56,8 +56,8 @@ guardrails = GuardrailsRunnable(api_url="http://localhost:8000")
 
 # Create a chain: Input -> Guardrails (Sanitize) -> LLM -> Output
 chain = (
-    guardrails 
-    | ChatOpenAI() 
+    guardrails
+    | ChatOpenAI()
     | StrOutputParser()
 )
 

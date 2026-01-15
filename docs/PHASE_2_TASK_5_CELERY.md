@@ -1,7 +1,7 @@
 # Task 5: Setup Celery for Async Processing
 
-**Status:** ✅ COMPLETE  
-**Date Completed:** 2024  
+**Status:** ✅ COMPLETE
+**Date Completed:** 2024
 **Test Results:** 59/59 Celery tests + 75/75 prior tests = 134/134 PASSING (100%)
 
 ## Overview
@@ -109,8 +109,8 @@ Asynchronously detect PII in text.
 }
 ```
 
-**Queue:** `detection`  
-**Timeout:** 5 minutes (soft), 10 minutes (hard)  
+**Queue:** `detection`
+**Timeout:** 5 minutes (soft), 10 minutes (hard)
 **Retries:** 3
 
 ---
@@ -146,8 +146,8 @@ Asynchronously check compliance against multiple frameworks.
 }
 ```
 
-**Queue:** `compliance`  
-**Timeout:** 5 minutes (soft), 10 minutes (hard)  
+**Queue:** `compliance`
+**Timeout:** 5 minutes (soft), 10 minutes (hard)
 **Retries:** 3
 
 ---
@@ -175,8 +175,8 @@ Asynchronously redact sensitive data using specified strategy.
 }
 ```
 
-**Queue:** `redaction`  
-**Timeout:** 5 minutes  
+**Queue:** `redaction`
+**Timeout:** 5 minutes
 **Retries:** 3
 
 ---
@@ -218,8 +218,8 @@ Asynchronously assess overall risk from all components.
 }
 ```
 
-**Queue:** `scoring`  
-**Timeout:** 5 minutes  
+**Queue:** `scoring`
+**Timeout:** 5 minutes
 **Retries:** 3
 
 ---
@@ -259,7 +259,7 @@ Complete end-to-end analysis: PII detection → Compliance checking → Risk sco
 }
 ```
 
-**Chains:** `detect_pii → compliance → scoring`  
+**Chains:** `detect_pii → compliance → scoring`
 **Total Time:** ~30 seconds
 
 ---
@@ -374,7 +374,7 @@ Get current status of a task.
 
 Get result of a completed task (blocks until complete or times out).
 
-**Response:** Task-specific result object  
+**Response:** Task-specific result object
 **Status Code:** 202 if still processing
 
 ---

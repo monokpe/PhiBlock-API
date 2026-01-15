@@ -219,6 +219,7 @@ from . import auth, models
 from .database import get_db
 from fastapi import Depends
 
+
 @router.post(
     "/analyze/async",
     response_model=AsyncTaskResponse,
@@ -241,7 +242,9 @@ async def submit_analysis_task(
         current_user: Authenticated API key
     """
     try:
-        logger.info(f"[submit_analysis_task] Submitting analysis for {len(request.text)} chars (tenant={current_user.tenant_id})")
+        logger.info(
+            f"[submit_analysis_task] Submitting analysis for {len(request.text)} chars (tenant={current_user.tenant_id})"
+        )
 
         # Submit task to Celery
         task = analyze_complete_async.delay(

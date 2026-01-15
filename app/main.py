@@ -59,6 +59,7 @@ app = FastAPI(
     version="0.1.0",
 )
 
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """
@@ -68,10 +69,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "detail": "Invalid Request Format",
-            "message": "The JSON payload is malformed. This often happens if you use unescaped double quotes inside a string (e.g., \"\"text\"\"). Please use single quotes or escape your double quotes (e.g., \\\"text\\\").",
+            "message": 'The JSON payload is malformed. This often happens if you use unescaped double quotes inside a string (e.g., ""text""). Please use single quotes or escape your double quotes (e.g., \\"text\\").',
             "errors": exc.errors(),
         },
     )
+
 
 app.add_middleware(TenantContextMiddleware)
 
@@ -144,42 +146,50 @@ async def analyze_prompt(
     # compliance engine expects {"type": ..., "value": ..., "start": ..., "end": ...}
     normalized_entities = []
     for e in raw_entities:
-        normalized_entities.append({
-            "type": e["type"],
-            "value": e["value"],
-            "start": e["position"]["start"],
-            "end": e["position"]["end"]
-        })
+        normalized_entities.append(
+            {
+                "type": e["type"],
+                "value": e["value"],
+                "start": e["position"]["start"],
+                "end": e["position"]["end"],
+            }
+        )
 
     if injection_detected:
-        normalized_entities.append({
-            "type": "PROMPT_INJECTION",
-            "value": body.prompt,
-            "start": 0,
-            "end": len(body.prompt),
-            "confidence": injection_score
-        })
+        normalized_entities.append(
+            {
+                "type": "PROMPT_INJECTION",
+                "value": body.prompt,
+                "start": 0,
+                "end": len(body.prompt),
+                "confidence": injection_score,
+            }
+        )
 
     # 2. Evaluate Compliance Rules
     rules = load_compliance_rules()
     engine = get_compliance_engine()
     engine.load_rules(rules)
-    
+
     # We include our new "Security" framework by default here
     frameworks = ["Security", "GDPR", "HIPAA", "PCI-DSS"]
-    compliance_result = engine.check_compliance(body.prompt, normalized_entities, frameworks=frameworks)
+    compliance_result = engine.check_compliance(
+        body.prompt, normalized_entities, frameworks=frameworks
+    )
 
     # 3. Apply Redaction/Blocking based on Compliance Engine results
     redaction_service = get_redaction_service()
-    
+
     # Identify if we have a BLOCK action
     should_block = any(v.action == ComplianceAction.BLOCK for v in compliance_result.violations)
-    
+
     if should_block:
         # If blocked, we mask the entire prompt or return a specific message
-        # The design for BLOCK usually means the request is rejected, 
+        # The design for BLOCK usually means the request is rejected,
         # but for sanitized_prompt we can provide the filtered message
-        blocking_violation = next(v for v in compliance_result.violations if v.action == ComplianceAction.BLOCK)
+        blocking_violation = next(
+            v for v in compliance_result.violations if v.action == ComplianceAction.BLOCK
+        )
         sanitized_prompt = f"[FILTERED DUE TO {blocking_violation.rule_name.upper()}]"
     else:
         # Otherwise, redact specific entities marked for REDACT
@@ -202,9 +212,10 @@ async def analyze_prompt(
                     "rule_name": v.rule_name,
                     "framework": v.framework,
                     "severity": v.severity,
-                    "message": v.message
-                } for v in compliance_result.violations
-            ]
+                    "message": v.message,
+                }
+                for v in compliance_result.violations
+            ],
         },
         "cached": False,
     }

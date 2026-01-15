@@ -58,6 +58,7 @@ async def log_request(
     except Exception as e:
         # Don't fail the whole request if token logging fails, but log it
         import logging
+
         logging.getLogger(__name__).error(f"Failed to log token usage: {e}")
 
     # 3. Create audit log entry

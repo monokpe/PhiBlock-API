@@ -68,11 +68,11 @@ def get_analytics_stats(
 
     injection_count = logs_query.filter(models.AuditLog.injection_score > 0.5).count()
 
-    pii_count = logs_query.filter(
-        models.AuditLog.entities_detected.isnot(None)
-    ).all()
+    pii_count = logs_query.filter(models.AuditLog.entities_detected.isnot(None)).all()
     # Filter non-empty lists in Python to avoid SQL JSON comparison issues across dialects
-    pii_count = len([log for log in pii_count if log.entities_detected and len(log.entities_detected) > 0])
+    pii_count = len(
+        [log for log in pii_count if log.entities_detected and len(log.entities_detected) > 0]
+    )
 
     avg_latency = logs_query.with_entities(func.avg(models.AuditLog.latency_ms)).scalar() or 0.0
 

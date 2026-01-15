@@ -290,15 +290,17 @@ def analyze_complete_async(
 
         # 1. Detect PII
         from app.detection import detect_pii
+
         entities = detect_pii(text)
-        
+
         # 2. Check Compliance
         from app.compliance import ComplianceEngine, load_compliance_rules
+
         rules = load_compliance_rules()
         engine = ComplianceEngine()
         engine.load_rules(rules)
         comp_obj = engine.check_compliance(text, entities, frameworks=frameworks)
-        
+
         violations = [
             {
                 "rule_id": v.rule_id,
@@ -314,9 +316,10 @@ def analyze_complete_async(
         # 3. Score Risk
         from app.compliance import RiskScorer
         from app.compliance.models import ComplianceAction, ComplianceViolation, Severity
+
         severity_map = {s.name: s for s in Severity}
         action_map = {a.name: a for a in ComplianceAction}
-        
+
         violation_objects = [
             ComplianceViolation(
                 rule_id=str(v["rule_id"]),
@@ -329,7 +332,7 @@ def analyze_complete_async(
             )
             for v in violations
         ]
-        
+
         scorer = RiskScorer()
         assessment = scorer.assess_overall_risk(
             pii_entities=entities,
@@ -362,7 +365,7 @@ def analyze_complete_async(
             try:
                 from app.database import SessionLocal
                 from app.token_tracking import get_token_logger
-                
+
                 with SessionLocal() as db:
                     token_logger = get_token_logger(db)
                     token_logger.log_token_usage(
@@ -370,9 +373,9 @@ def analyze_complete_async(
                         tenant_id=tenant_id,
                         endpoint="/v1/analyze/async",
                         input_text=text,
-                        output_text=None, # In async we don't necessarily have a single output text yet if it's multifaceted
+                        output_text=None,  # In async we don't necessarily have a single output text yet if it's multifaceted
                         request_id=self.request.id if hasattr(self, "request") else None,
-                        metadata={"type": "async_complete"}
+                        metadata={"type": "async_complete"},
                     )
                     db.commit()
             except Exception as e:

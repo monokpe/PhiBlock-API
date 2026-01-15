@@ -62,7 +62,7 @@ def test_analyze_endpoint_success(client, db_session):
 
     # Verify Persistence
     from app.models import AuditLog, TokenUsage
-    
+
     # 1. Verify TokenUsage
     usage = db_session.query(TokenUsage).filter_by(api_key_id=customer.api_keys[0].id).first()
     assert usage is not None
@@ -70,11 +70,17 @@ def test_analyze_endpoint_success(client, db_session):
     assert usage.endpoint == "/v1/analyze"
 
     # 2. Verify AuditLog and Encryption
+    all_logs = db_session.query(AuditLog).all()
+    for log in all_logs:
+
+    if customer.api_keys:
+    else:
+
     audit = db_session.query(AuditLog).filter_by(api_key_id=customer.api_keys[0].id).first()
     assert audit is not None
     assert audit.redacted_prompt_encrypted is not None # Should be populated even if encryption is "disabled" via missing env (as it tries to encrypt and it might be enabled by default in some test setups)
-    
-    # If AUDIT_ENCRYPTION_SECRET is not set, encrypt() returns None, 
+
+    # If AUDIT_ENCRYPTION_SECRET is not set, encrypt() returns None,
     # but let's see if we can check it.
 
 

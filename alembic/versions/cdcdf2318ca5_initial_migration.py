@@ -1,7 +1,7 @@
 """Initial migration
 
 Revision ID: cdcdf2318ca5
-Revises: 
+Revises:
 Create Date: 2025-10-06 14:13:12.675790
 
 """

@@ -50,4 +50,3 @@ try:
 except Exception as e:
     out["detect_pii"] = f"error: {e}"
 
-print(json.dumps(out, indent=2))

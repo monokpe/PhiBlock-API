@@ -57,7 +57,7 @@ def create_demo_data(
         # 3. Create API Key
         plain_key = secrets.token_hex(16)
         hashed_key = hashlib.sha256(plain_key.encode()).hexdigest()
-        
+
         logger.info(f"Generating new API key: {key_name}")
         api_key = APIKey(
             customer_id=customer.id,
@@ -83,13 +83,6 @@ if __name__ == "__main__":
     api_key = create_demo_data()
 
     if api_key:
-        print("\n" + "=" * 50)
-        print("✅ SUCCESS: Demo Environment Set Up")
-        print("=" * 50)
-        print(f"YOUR API KEY: {api_key}")
-        print("=" * 50)
-        print("IMPORTANT: Save this key! It cannot be retrieved later.")
-        print("=" * 50 + "\n")
     else:
         logger.error("❌ Failed to create demo user.")
         sys.exit(1)

@@ -280,6 +280,7 @@ class TestTokenUsageLogging:
         args, _ = db.add.call_args
         token_usage = args[0]
         from app.models import TokenUsage
+
         assert isinstance(token_usage, TokenUsage)
         assert token_usage.api_key_id == "test-key"
         assert token_usage.endpoint == "/api/v1/analyze"

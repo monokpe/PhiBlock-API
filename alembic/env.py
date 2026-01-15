@@ -58,7 +58,7 @@ def run_migrations_online() -> None:
 
     """
     database_url = os.getenv("DATABASE_URL")
-    
+
     if database_url:
         from sqlalchemy import create_engine
         connectable = create_engine(database_url, poolclass=pool.NullPool)
