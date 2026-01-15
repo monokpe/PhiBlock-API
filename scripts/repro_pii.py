@@ -4,7 +4,7 @@ import sys
 # Ensure app is in path
 sys.path.append(os.getcwd())
 
-from app.detection import detect_pii
+from app.detection import detect_pii  # noqa: E402
 
 
 def test_pii():
@@ -15,9 +15,8 @@ def test_pii():
     ]
 
     for text in test_cases:
-        entities = detect_pii(text)
+        _ = detect_pii(text)
         # Process entities
-        pass
 
 
 if __name__ == "__main__":

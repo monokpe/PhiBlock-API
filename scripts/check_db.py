@@ -3,7 +3,6 @@ import sys
 
 import redis
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
 
 
 def check_database():
@@ -32,7 +31,7 @@ def check_database():
             if not exists:
                 return False
 
-    except Exception as e:
+    except Exception:
         return False
     return True
 
@@ -43,7 +42,7 @@ def check_redis():
         r = redis.from_url(url)
         if not r.ping():
             return False
-    except Exception as e:
+    except Exception:
         return False
     return True
 

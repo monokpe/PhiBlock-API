@@ -5,8 +5,8 @@ from pathlib import Path
 # Ensure app is in path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from app import auth, models
-from app.database import SessionLocal
+from app import auth, models  # noqa: E402
+from app.database import SessionLocal  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
