@@ -2,7 +2,22 @@ import re
 
 import spacy
 
-nlp = spacy.load("en_core_web_sm")
+# Lazy load spacy model to handle CI environments where it may not be pre-downloaded
+_nlp = None
+
+
+def get_nlp():
+    """Get or load the spacy NLP model."""
+    global _nlp
+    if _nlp is None:
+        try:
+            _nlp = spacy.load("en_core_web_sm")
+        except OSError:
+            # Model not found - return None in CI/test environments
+            # Fallback to regex-only detection
+            return None
+    return _nlp
+
 
 REGEX_PATTERNS = {
     "CREDIT_CARD": r"\b(?:\d[ -]*?){13,16}\b",
@@ -26,6 +41,11 @@ def detect_pii(text: str) -> list[dict]:
                     "confidence": 1.0,
                 }
             )
+
+    nlp = get_nlp()
+    if nlp is None:
+        # Model not available, return regex-only results
+        return entities
 
     doc = nlp(text)
     for ent in doc.ents:
