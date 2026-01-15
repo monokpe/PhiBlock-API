@@ -12,8 +12,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.auth import create_api_key
 from app.audit_encryption import AuditEncryptor
+from app.auth import create_api_key
 from app.models import AuditLog, Base, Customer, Tenant, TokenUsage
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test_data_integrity.db"
