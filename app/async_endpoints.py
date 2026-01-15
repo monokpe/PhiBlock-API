@@ -20,7 +20,9 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from workers.celery_app import analyze_complete_async
+from workers.celery_app import (
+    analyze_complete_async,
+)
 from workers.celery_app import celery_app as app
 from workers.celery_app import (
     check_compliance_async,
