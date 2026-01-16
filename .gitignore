@@ -159,8 +159,9 @@ htmlcov/
 
 # Documentation
 # Documentation
-docs/
+docs/*
 # Expose public documentation
+!docs/assets/
 !docs/BUBBLE_INTEGRATION.md
 !docs/LANGCHAIN_INTEGRATION.md
 !docs/ZAPIER_INTEGRATION.md
