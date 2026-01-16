@@ -24,7 +24,8 @@ PhiBlock is a real-time API firewall that filters AI prompts before they reach L
 
 - ✅ **PII Leakage Prevention** - Detect and redact sensitive data before it reaches third-party LLMs
 - ✅ **Prompt Injection Defense** - Block malicious prompts attempting to manipulate AI behavior
-- ✅ **Regulatory Compliance** - Enforce HIPAA, GDPR, and PCI-DSS rules with contextual analysis
+- ✅ **Regulatory Compliance** - Enforce HIPAA, GDPR, PCI-DSS, and PIPEDA rules with contextual analysis
+- ✅ **Enterprise Security** - Prevent leakage of secrets (AWS/Stripe keys) and proprietary documents
 - ✅ **Multi-Tenant Security** - Strict data isolation for SaaS applications
 - ✅ **Usage Tracking & Billing** - Token-level metering with Stripe integration
 
@@ -34,7 +35,7 @@ PhiBlock is a real-time API firewall that filters AI prompts before they reach L
 Ensure that patient data (PHI) never leaves your infrastructure. PhiBlock intercepts chat messages, redacting names, conditions, and SSNs before they are sent to GPT-4, ensuring full HIPAA compliance alongside your BAA.
 
 #### 💸 Fintech: Secure Customer Support
-Prevent sensitive financial data from leaking into training datasets. Automatically block prompts containing credit card numbers (PCI-DSS) or account details while allowing general support queries to pass through.
+Prevent sensitive financial data from leaking into training datasets. Automatically redact credit card numbers (PCI-DSS) or account details while allowing general support queries to pass through.
 
 #### 🛡️ Enterprise: Internal AI Tools
 Protect your company IP. Detect and block employees from pasting proprietary code or internal memos into public LLMs, while maintaining an audit trail of all AI usage.
@@ -55,6 +56,7 @@ Protect your company IP. Detect and block employees from pasting proprietary cod
 - **HIPAA Support** - PHI detection and electronic audit controls
 - **GDPR Compliance** - Personal data classification and processing logs
 - **PCI-DSS Rules** - Credit card and financial data protection
+- **Enterprise Security** - Detection of AWS/Stripe keys and IP-protected confidential markers
 - **Custom Frameworks** - Extensible rule system for additional compliance needs
 
 ### 🏢 Multi-Tenancy

@@ -17,7 +17,7 @@ rules:
     name: "PHI - Medical Record Number"
     description: "Detects medical record numbers which are protected health information"
     severity: critical
-    action: block
+    action: redact
     keywords:
       - MRN
       - medical record number
@@ -31,7 +31,7 @@ rules:
     name: "PHI - Social Security Number"
     description: "Detects SSN which is considered PHI"
     severity: critical
-    action: block
+    action: redact
     entity_types:
       - SSN
     patterns:

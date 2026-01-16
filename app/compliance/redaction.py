@@ -44,6 +44,51 @@ class RedactionService:
         self.strategy = strategy
         self.redaction_map: Dict[str, str] = {}
 
+    def _merge_entities(self, entities: List[Dict], text: str) -> List[Dict]:
+        """
+        Merge overlapping or adjacent entities.
+        """
+        if not entities:
+            return []
+
+        # Filter out invalid entities
+        valid_entities = [
+            e for e in entities 
+            if e.get("start", -1) >= 0 and e.get("end", -1) > e.get("start", -1)
+        ]
+        
+        if not valid_entities:
+            return []
+
+        # Sort by start position
+        sorted_ents = sorted(valid_entities, key=lambda e: e.get("start", 0))
+        
+        merged = []
+        current = sorted_ents[0].copy()
+        
+        for next_ent in sorted_ents[1:]:
+            # If overlapping or adjacent
+            if next_ent["start"] <= current["end"]:
+                # Extend end if needed
+                current["end"] = max(current["end"], next_ent["end"])
+                
+                # Combine types
+                c_type = current.get("type", "UNKNOWN")
+                n_type = next_ent.get("type", "UNKNOWN")
+                if n_type != c_type:
+                    types = set(t.strip() for t in c_type.split("|"))
+                    types.add(n_type)
+                    current["type"] = "|".join(sorted(list(types)))
+                
+                # Update merged value based on new start/end
+                current["value"] = text[current["start"]:current["end"]]
+            else:
+                merged.append(current)
+                current = next_ent.copy()
+        
+        merged.append(current)
+        return merged
+
     def redact_text(
         self,
         text: str,
@@ -69,8 +114,11 @@ class RedactionService:
         redacted_text = text
         redaction_records = []
 
+        # Merge overlapping entities first
+        merged_entities = self._merge_entities(entities, text)
+
         sorted_entities = sorted(
-            entities,
+            merged_entities,
             key=lambda e: e.get("start", 0),
             reverse=True,
         )

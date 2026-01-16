@@ -72,6 +72,8 @@ class ComplianceViolation:
     remediation: str
     action: ComplianceAction
     matched_content: Optional[str] = None
+    start: Optional[int] = None
+    end: Optional[int] = None
     entity_types: List[str] = field(default_factory=list)
 
     def __post_init__(self):

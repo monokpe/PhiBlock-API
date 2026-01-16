@@ -51,7 +51,7 @@ scp $SSH_OPTS -i "$SSH_KEY_PATH" "scripts/deploy_ec2.sh" "$($EC2_USER)@$($EC2_IP
 
 # 4. Run deployment on EC2
 Write-Host "🛠️ Running deployment script on remote server..." -ForegroundColor Green
-ssh $SSH_OPTS -i "$SSH_KEY_PATH" "$($EC2_USER)@$($EC2_IP)" "chmod +x ~/deploy_ec2.sh && ~/deploy_ec2.sh"
+ssh $SSH_OPTS -i "$SSH_KEY_PATH" "$($EC2_USER)@$($EC2_IP)" "chmod +x ~/deploy_ec2.sh; ~/deploy_ec2.sh"
 
 
 # 5. Cleanup

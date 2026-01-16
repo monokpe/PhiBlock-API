@@ -132,6 +132,8 @@ new_venv/
 *.db
 test_result*.txt
 .env.local
+LLM.txt
+repro_redaction.py
 
 # IDE
 .idea/

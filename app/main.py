@@ -76,6 +76,20 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 app.add_middleware(TenantContextMiddleware)
+# Global Initialization of Compliance Engine
+# Load rules ONCE at startup to avoid re-parsing YAML on every request
+# and to prevent potential race conditions with the singleton engine.
+engine = get_compliance_engine()
+try:
+    # Clear cache to ensure fresh load if needed, or rely on internal logic
+    # Here we just load them.
+    loaded_rules = load_compliance_rules()
+    engine.load_rules(loaded_rules)
+    logger.info(f"Initialized Compliance Engine with {len(loaded_rules)} rules.")
+except Exception as e:
+    logger.error(f"Failed to initialize Compliance Engine: {e}")
+
+app.add_middleware(TenantContextMiddleware)
 
 register_security(app)
 
@@ -139,7 +153,9 @@ async def analyze_prompt(
         logger.warning(f"Injection detection failed: {e}")
         injection_score = 0.0
 
-    injection_detected = injection_score > 0.5
+    # Increased threshold to 0.9 to avoid false positives on PII-heavy prompts
+    # Previous threshold of 0.5 was too aggressive for "My name is..." type inputs.
+    injection_detected = injection_score > 0.9
 
     # 1. Normalize and Aggregate Entities
     # detect_pii returns {"type": ..., "value": ..., "position": {"start": ..., "end": ...}}
@@ -167,9 +183,8 @@ async def analyze_prompt(
         )
 
     # 2. Evaluate Compliance Rules
-    rules = load_compliance_rules()
+    # Engine is already initialized globally at startup
     engine = get_compliance_engine()
-    engine.load_rules(rules)
 
     # We include our new "Security" framework by default here
     frameworks = ["Security", "GDPR", "HIPAA", "PCI-DSS"]
@@ -177,11 +192,26 @@ async def analyze_prompt(
         body.prompt, normalized_entities, frameworks=frameworks
     )
 
+    # Add violations marked for REDACT to normalized_entities if they have indices
+    for v in compliance_result.violations:
+        if v.action == ComplianceAction.REDACT and v.start is not None and v.end is not None:
+            normalized_entities.append(
+                {
+                    "type": v.rule_name,
+                    "value": v.matched_content,
+                    "start": v.start,
+                    "end": v.end,
+                }
+            )
+
     # 3. Apply Redaction/Blocking based on Compliance Engine results
     redaction_service = get_redaction_service()
 
     # Identify if we have a BLOCK action
+    logger.info(f"Checking for block. Violations: {[v.rule_name for v in compliance_result.violations]}")
     should_block = any(v.action == ComplianceAction.BLOCK for v in compliance_result.violations)
+    if should_block:
+        logger.info("Found BLOCK action")
 
     if should_block:
         # If blocked, we mask the entire prompt or return a specific message
@@ -197,7 +227,7 @@ async def analyze_prompt(
 
     analysis_result = {
         "request_id": str(request_id),
-        "status": "completed",
+        "status": "blocked" if should_block else "completed",
         "sanitized_prompt": sanitized_prompt,
         "detections": {
             "pii_found": len(raw_entities) > 0,

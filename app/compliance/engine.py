@@ -20,10 +20,24 @@ class ComplianceEngine:
         self.frameworks: List[str] = []
 
     def load_rules(self, rules: List[ComplianceRule]) -> None:
+        """
+        Load a list of compliance rules.
+        Existing rules are cleared to prevent duplication.
+        """
+        # Clear existing rules to prevent duplicates
+        self.rules = {}
+        self.frameworks = []
+
         for rule in rules:
             if rule.framework not in self.rules:
                 self.rules[rule.framework] = []
-            self.rules[rule.framework].append(rule)
+            
+            # Check for duplicates by ID within the framework
+            existing_ids = {r.id for r in self.rules[rule.framework]}
+            if rule.id not in existing_ids:
+                self.rules[rule.framework].append(rule)
+            else:
+                logger.warning(f"Duplicate rule ignored: {rule.id} in framework {rule.framework}")
 
         self.frameworks = list(self.rules.keys())
 
@@ -107,6 +121,8 @@ class ComplianceEngine:
                             remediation=rule.remediation,
                             action=rule.action,
                             matched_content=keyword,
+                            start=text_lower.find(keyword.lower()),
+                            end=text_lower.find(keyword.lower()) + len(keyword),
                         )
                     )
                     break
@@ -126,6 +142,8 @@ class ComplianceEngine:
                                 remediation=rule.remediation,
                                 action=rule.action,
                                 matched_content=match.group(0),
+                                start=match.start(),
+                                end=match.end(),
                             )
                         )
                 except re.error as e:

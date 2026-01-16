@@ -5,7 +5,7 @@ rules:
     name: "Cardholder Data - Credit Card Number"
     description: "Detects credit card numbers which are Cardholder Data under PCI-DSS"
     severity: critical
-    action: block
+    action: redact
     entity_types:
       - CREDIT_CARD
     patterns:
