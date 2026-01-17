@@ -162,11 +162,7 @@ htmlcov/
 docs/*
 # Expose public documentation
 !docs/assets/
-!docs/BUBBLE_INTEGRATION.md
-!docs/LANGCHAIN_INTEGRATION.md
-!docs/ZAPIER_INTEGRATION.md
-!docs/bubble_openapi.json
-!docs/zapier_spec.json
 !docs/PHASE_2_ARCHITECTURE.md
+!docs/PHASE_4_SECURITY.md
 !docs/SETUP_GUIDE.md
-docs/todo.md
+!docs/AWS_DEPLOYMENT_GUIDE.md

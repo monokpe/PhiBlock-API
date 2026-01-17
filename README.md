@@ -544,7 +544,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **Documentation**: Check `/docs` folder for detailed guides
+- **Files**: Check `/docs` and `/integrations` folders for detailed guides
 - **Issues**: Open a GitHub issue for bugs or feature requests
 - **Email**: [onokpejames@gmail.com](mailto:onokpejames@gmail.com)
 
