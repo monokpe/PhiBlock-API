@@ -1,1 +1,1 @@
-"""GraphQL package for Guardrails API."""
+"""GraphQL package for PhiBlock API."""

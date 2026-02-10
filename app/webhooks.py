@@ -118,7 +118,7 @@ class WebhookNotifier:
     RETRY_BACKOFF = 2
     DEFAULT_HEADERS = {
         "Content-Type": "application/json",
-        "User-Agent": "Guardrails-Webhook/1.0",
+        "User-Agent": "PhiBlock-Webhook/1.0",
     }
 
     def __init__(

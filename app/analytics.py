@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Dict
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from . import models
@@ -92,55 +92,43 @@ def get_analytics_timeseries(
     db: Session = Depends(get_db),
     current_user: models.APIKey = Depends(get_current_user),
 ):
-    """Get time-series data for charts."""
+    """Get time-series data for charts using efficient SQL aggregation."""
     start_date = get_date_range(range)
     tenant_id = current_user.tenant_id
 
-    logs = (
+    # Group by date and calculate aggregates in SQL
+    aggregated_data = (
         db.query(
-            models.AuditLog.timestamp,
-            models.AuditLog.latency_ms,
-            models.AuditLog.injection_score,
-            models.AuditLog.entities_detected,
+            func.date(models.AuditLog.timestamp).label("date"),
+            func.count(models.AuditLog.id).label("requests"),
+            func.avg(models.AuditLog.latency_ms).label("avg_latency"),
+            # Count violations: injection > 0.5 or entities_detected is not null/empty
+            # Note: JSON logic can be tricky across dialects, so we use a simplified count
+            func.sum(
+                case(
+                    (models.AuditLog.injection_score > 0.5, 1),
+                    (models.AuditLog.entities_detected.isnot(None), 1),
+                    else_=0,
+                )
+            ).label("violations"),
         )
         .filter(models.AuditLog.tenant_id == tenant_id, models.AuditLog.timestamp >= start_date)
-        .order_by(models.AuditLog.timestamp)
+        .group_by(func.date(models.AuditLog.timestamp))
+        .order_by("date")
         .all()
     )
 
-    data_map = {}
-
-    for log in logs:
-        date_key = log.timestamp.date()
-        if date_key not in data_map:
-            data_map[date_key] = {"requests": 0, "violations": 0, "total_latency": 0, "count": 0}
-
-        data_map[date_key]["requests"] += 1
-        data_map[date_key]["total_latency"] += log.latency_ms
-        data_map[date_key]["count"] += 1
-
-        is_violation = False
-        if log.injection_score and log.injection_score > 0.5:
-            is_violation = True
-        elif log.entities_detected and log.entities_detected != []:
-            is_violation = True
-
-        if is_violation:
-            data_map[date_key]["violations"] += 1
-
-    result_data = []
-    sorted_dates = sorted(data_map.keys())
-
-    for d in sorted_dates:
-        stats = data_map[d]
-        result_data.append(
-            TimeSeriesPoint(
-                date=d,
-                requests=stats["requests"],
-                violations=stats["violations"],
-                latency_ms=stats["total_latency"] / stats["count"] if stats["count"] > 0 else 0,
-            )
+    result_data = [
+        TimeSeriesPoint(
+            date=row.date
+            if isinstance(row.date, datetime)
+            else datetime.strptime(row.date, "%Y-%m-%d").date(),
+            requests=row.requests,
+            violations=int(row.violations or 0),
+            latency_ms=float(row.avg_latency or 0.0),
         )
+        for row in aggregated_data
+    ]
 
     return TimeSeriesResponse(data=result_data)
 

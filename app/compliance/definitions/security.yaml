@@ -8,4 +8,4 @@ rules:
     action: block
     entity_types:
       - PROMPT_INJECTION
-    remediation: "Block malicious prompts and implement safety guardrails on the LLM side"
+    remediation: "Block malicious prompts and implement safety safeguards on the LLM side"

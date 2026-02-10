@@ -31,7 +31,7 @@ jobs:
           flake8 app/ tests/ workers/ --max-line-length=100 --extend-ignore=E203,W503,D
       - name: Type check with mypy
         run: |
-          mypy app/ workers/ --ignore-missing-imports --check-untyped-defs || true
+          mypy app/ workers/ --ignore-missing-imports --check-untyped-defs
 
   complexity-check:
     name: Complexity Analysis

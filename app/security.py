@@ -5,8 +5,8 @@ Provides:
 - `RequestSigningMiddleware` to validate incoming webhook signatures
 - `register_security(app)` to wire middleware into FastAPI app
 
-The signing middleware checks `X-Guardrails-Signature` and
-`X-Guardrails-Timestamp` headers for requests under `/webhooks`.
+The signing middleware checks `X-PhiBlock-Signature` and
+`X-PhiBlock-Timestamp` headers for requests under `/webhooks`.
 """
 
 from __future__ import annotations
@@ -43,8 +43,8 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
         if not secret:
             return await call_next(request)
 
-        sig_header = request.headers.get("x-guardrails-signature")
-        ts_header = request.headers.get("x-guardrails-timestamp")
+        sig_header = request.headers.get("x-phiblock-signature")
+        ts_header = request.headers.get("x-phiblock-timestamp")
 
         if not sig_header or not ts_header:
             return JSONResponse({"detail": "Missing signature headers"}, status_code=401)

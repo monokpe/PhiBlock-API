@@ -34,8 +34,8 @@ def sign_payload(payload: Dict, secret: str) -> Dict[str, str]:
     sig = mac.hexdigest()
     timestamp = datetime.now(timezone.utc).isoformat()
     return {
-        "X-Guardrails-Signature": f"sha256={sig}",
-        "X-Guardrails-Timestamp": timestamp,
+        "X-PhiBlock-Signature": f"sha256={sig}",
+        "X-PhiBlock-Timestamp": timestamp,
     }
 
 
@@ -43,7 +43,8 @@ def is_allowed_webhook(url: str) -> bool:
     """Check webhook URL against allowed domains from env."""
     env = os.getenv("ALLOWED_WEBHOOK_DOMAINS", "").strip()
     if not env:
-        return True
+        logger.warning("ALLOWED_WEBHOOK_DOMAINS not configured; rejecting by default")
+        return False
 
     try:
         parsed = urlparse(url)

@@ -141,7 +141,10 @@ class RiskScorer:
                 f"Prompt injection risk "
                 f"(confidence: {injection_confidence:.2%}, length: {prompt_length})"
             ),
-            remediation="Review and sanitize prompt; implement instruction following guardrails",
+            remediation=(
+                "Review and sanitize prompt; implement instruction following "
+                "safeguards using PhiBlock"
+            ),
         )
 
     def score_compliance_violation(

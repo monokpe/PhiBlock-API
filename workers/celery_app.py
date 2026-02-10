@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from celery import Celery
 from celery.schedules import crontab
+from celery.signals import worker_process_init
 from kombu import Exchange, Queue
 
 logger = logging.getLogger(__name__)
@@ -70,6 +71,33 @@ celery_app.conf.beat_schedule = {
         "schedule": crontab(minute=0),
     },
 }
+
+
+@worker_process_init.connect
+def warm_up_models(**kwargs):
+    """
+    Warm up ML models at worker process initialization.
+    This reduces cold-start latency for the first few analysis requests.
+    """
+    try:
+        from app.detection import get_nlp
+        from workers.detection import get_injection_score
+
+        logger.info("[worker_process_init] Warming up ML models...")
+
+        # Warm up spaCy
+        get_nlp()
+
+        # Warm up injection model with a dummy prompt
+        try:
+            get_injection_score("warmup")
+        except Exception:
+            # Injection model might fail in environments without GPU/Transformers
+            logger.warning("[worker_process_init] Injection model warmup skipped or failed")
+
+        logger.info("[worker_process_init] ML models warmed up successfully")
+    except Exception as e:
+        logger.error(f"[worker_process_init] Failed to warm up models: {e}")
 
 
 @celery_app.task(

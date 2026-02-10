@@ -92,8 +92,8 @@ class TokenTracker:
             tokens = encoding.encode(text)
             return len(tokens)
         except Exception as e:
-            logger.error(f"TokenTracker: Error counting tokens: {e}")
-            return len(text) // 4
+            logger.error(f"TokenTracker: Error counting tokens, falling back to estimation: {e}")
+            return len(text) // 4  # Fallback
 
     def count_tokens_batch(self, texts: List[str], model: Optional[TokenModel] = None) -> List[int]:
         """

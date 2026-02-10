@@ -38,7 +38,7 @@ def generate_cache_key(prompt: str, tenant_id: str) -> str:
         tenant_id: The tenant UUID
 
     Returns:
-        Cache key in format: guardrails:cache:{tenant_id}:{prompt_hash}
+        Cache key in format: phiblock:cache:{tenant_id}:{prompt_hash}
     """
     prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()[:16]
     return f"phiblock:cache:{tenant_id}:{prompt_hash}"

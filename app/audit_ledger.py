@@ -8,7 +8,7 @@ verifying integrity of the whole file.
 
 Usage:
     from app.audit_ledger import AuditLedger
-    ledger = AuditLedger(path="/var/log/guardrails_audit.log")
+    ledger = AuditLedger(path="/var/log/phiblock_audit.log")
     ledger.append({"event": "request", "user": "abc"})
     AuditLedger.verify_file(path)
 

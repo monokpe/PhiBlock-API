@@ -123,6 +123,7 @@ class APIKey(Base):
     tenant_id = Column(GUID, ForeignKey("tenants.id"), nullable=False, index=True)
     customer_id = Column(GUID, ForeignKey("customers.id"), nullable=False, index=True)
     key_hash = Column(String(64), nullable=False, unique=True, index=True)
+    key_prefix = Column(String(8), index=True, nullable=True)  # First 8 chars for O(1) lookup
     name = Column(String(255))
     tier = Column(String(50), default="standard")
     rate_limit = Column(Integer, default=100)

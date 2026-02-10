@@ -27,6 +27,7 @@ def get_password_hash(password):
 def create_api_key(db: Session, customer_id: uuid.UUID) -> tuple[str, models.APIKey]:
     """Generate a new API key, hash it, and store it in the database."""
     plain_key = secrets.token_hex(16)
+    prefix = plain_key[:8]
     hashed_key = get_password_hash(plain_key)
 
     from .middleware import get_current_tenant
@@ -43,9 +44,10 @@ def create_api_key(db: Session, customer_id: uuid.UUID) -> tuple[str, models.API
             raise ValueError(f"Customer {customer_id} not found")
 
     new_api_key = models.APIKey(
-        customer_id=customer_id,
         tenant_id=customer.tenant_id,
+        customer_id=customer_id,
         key_hash=hashed_key,
+        key_prefix=prefix,
         name="New API Key",
     )
     db.add(new_api_key)
@@ -55,12 +57,33 @@ def create_api_key(db: Session, customer_id: uuid.UUID) -> tuple[str, models.API
     return plain_key, new_api_key
 
 
+def generate_api_key(db: Session, tenant_id: uuid.UUID, customer_id: uuid.UUID, name: str) -> str:
+    """Generate a random API key, store its hash and prefix, and return the key."""
+    key = str(uuid.uuid4())
+    prefix = key[:8]
+    hashed_key = get_password_hash(key)
+
+    api_key = models.APIKey(
+        tenant_id=tenant_id,
+        customer_id=customer_id,
+        key_hash=hashed_key,
+        key_prefix=prefix,
+        name=name,
+    )
+    db.add(api_key)
+    db.commit()
+    db.refresh(api_key)
+    return key
+
+
 def get_api_key_from_db(db: Session, key: str) -> models.APIKey | None:
-    """
-    Retrieves an API key from the database by matching against stored hashes.
-    """
+    """Find an API key in the database using O(1) prefix lookup."""
+    prefix = key[:8] if len(key) >= 8 else key
     api_keys: list[models.APIKey] = (
-        db.query(models.APIKey).filter(models.APIKey.revoked_at.is_(None)).all()
+        db.query(models.APIKey)
+        .filter(models.APIKey.key_prefix == prefix)
+        .filter(models.APIKey.revoked_at.is_(None))
+        .all()
     )
 
     for api_key_obj in api_keys:

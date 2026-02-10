@@ -6,9 +6,9 @@ def test_sign_payload_headers_format():
     secret = "supersecret"
     headers = webhook_security.sign_payload(payload, secret)
 
-    assert "X-Guardrails-Signature" in headers
-    assert headers["X-Guardrails-Signature"].startswith("sha256=")
-    assert "X-Guardrails-Timestamp" in headers
+    assert "X-PhiBlock-Signature" in headers
+    assert headers["X-PhiBlock-Signature"].startswith("sha256=")
+    assert "X-PhiBlock-Timestamp" in headers
 
 
 def test_is_allowed_webhook_with_allowlist(monkeypatch):
